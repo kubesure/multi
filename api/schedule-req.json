@@ -1,0 +1,17 @@
+{
+    "maxResponseTimeSeconds": "5",
+    "customers":[
+        {
+            "firstName": "Pete",
+            "lastName": "Smith"
+        },
+        {
+            "firstName": "Audrey",
+            "lastName": "Bailey"
+        },
+        {
+            "firstName": "Pete",
+            "lastName": "Smith"
+        }
+    ]
+}

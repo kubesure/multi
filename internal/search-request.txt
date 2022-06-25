@@ -1,0 +1,13 @@
+{
+    "query": {
+        "bool": {
+            "must": [
+                {
+                    "wildcard": {
+                        "firstName": {{.FirstName}}
+                    }
+                }
+            ]
+        }
+    }
+}

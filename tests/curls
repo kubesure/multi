@@ -1,0 +1,11 @@
+curl -X POST "https://localhost:9200/compliance/_doc?pretty" -H 'Content-Type: application/json'   --data-binary @./customer.json
+
+curl  -X POST "https://localhost:9200/compliance/_count?pretty" -H 'Content-Type: application/json' "-u elastic:nINcSYB*GmT5CpK2BCBO" 
+
+while true 
+do 
+  curl --silent -k -X POST "https://localhost:9200/compliance/_count?pretty" -H 'Content-Type: application/json' --user "elastic:nINcSYB*GmT5CpK2BCBO" | jq .count 
+  sleep 1
+done
+
+curl -X POST http://localhost:8000/api/v1/multisearch/customers -d @./schedule-req.json

@@ -1,0 +1,69 @@
+{
+    "id": "A1234567890",
+    "cif": "2134567890",
+    "firstName": "John",
+    "lastName": "Smith",
+    "shortName": "JS",
+    "fullName": "John Smith",
+    "dateOfBith": "25-Jan-1982",
+    "nationality": "GB",
+    "countryOfIncorporation": "AE",
+    "type": "INDIVIDUAL",
+    "identityDocument": [
+        {
+            "number": "P1000000093",
+            "type": "PASSPORT"
+        },
+        {
+            "number": "V10000000123",
+            "type": "VISA"
+        },
+        {
+            "number": "TL1234567123",
+            "type": "TL"
+        }
+    ],
+    "products": [
+        {
+            "number": "8123456790",
+            "type": "SBA",
+            "description": "Saving Account",
+            "productName": "SBA",
+            "customerName": "John Smith"
+        },
+        {
+            "number": "9123456780",
+            "type": "CAA",
+            "description": "Current Account",
+            "productName": "CAA",
+            "customerName": "John Smith"
+        },
+        {
+            "number": "7123456780",
+            "type": "LAA",
+            "description": "Loan Account",
+            "productName": "LAA",
+            "customerName": "John Smith"
+        }
+    ],
+    "relatedParties": [
+        {
+            "cif": "2134567891",
+            "firstName": "Jane",
+            "lastName": "Smith",
+            "dateOfBirth": "12-Mar-1984",
+            "nationality": "GB",
+            "documentNumber": "P1000000091",
+            "documentType": "PASSPORT"
+        },
+        {
+            "cif": "2134567891",
+            "firstName": "July",
+            "lastName": "Smith",
+            "dateOfBirth": "02-May-1999",
+            "nationality": "GB",
+            "documentNumber": "P1000000092",
+            "documentType": "PASSPORT"
+        }
+    ]
+}

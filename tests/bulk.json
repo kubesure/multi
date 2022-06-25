@@ -1,0 +1,18 @@
+[
+    {
+        "url": "http://localhost:9200/compliance/_search?pretty",
+        "body": "{\n    \"query\": {\n        \"bool\": {\n            \"must\": [\n                { \"wildcard\" : { \"firstName\" : \"*ete*\" } }\n            ]\n        }\n    }\n}\n",
+        "method": "GET",
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    },
+    {
+        "url": "http://localhost:9200/compliance/_search?pretty",
+        "body": "{\n    \"query\": {\n        \"bool\": {\n            \"must\": [\n                { \"wildcard\" : { \"firstName\" : \"john\" } }\n            ]\n        }\n    }\n}",
+        "method": "GET",
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    }
+]
