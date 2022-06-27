@@ -1,6 +1,6 @@
 CREATE TABLE batch (
 	id	                TEXT PRIMARY KEY,
-	type    	        TEXT,
+	type    	        INTEGER,
 	created_datetime	TEXT,
     updated_datetime    TEXT
 );
@@ -15,13 +15,14 @@ create TABLE job (
     retry_interval        INTEGER,
     retry_count           INTEGER,      
     created_datetime	  TEXT,
+    updated_datetime      TEXT,
     UNIQUE(id,batch_id)
 );
 
 create table schedule (
     batch_id        TEXT,
-    start_time      TEXT,
-    end_time        TEXT,
+    start_datetime      TEXT,
+    end_datetime        TEXT,
     scheduled_count INTEGER
 )
 

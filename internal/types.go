@@ -15,5 +15,32 @@ type ScheduleResult struct {
 }
 
 type schedule struct {
-	id string
+	id, startDateTime, endDateTime string
+	batch                          batch
 }
+
+type batch struct {
+	batchID, createdDate, updatedDate string
+	ttype                             BatchType
+}
+
+type job struct {
+	id, maxResponse, retryInterval, retryCount                           uint
+	batchId, payload, status, errorMsg, createdDateTime, updatedDateTime string
+}
+
+type database interface {
+	getSchedule(id string) *schedule
+	saveSchedule(s schedule) (id string)
+	saveBatch(b batch) (id string)
+	getBatch(id string) *batch
+	saveJob(j job) (id string)
+	getJob(id string) *job
+	getJobs(batchID string) []job
+}
+
+type BatchType int
+
+const (
+	CustomerSearchType BatchType = iota
+)

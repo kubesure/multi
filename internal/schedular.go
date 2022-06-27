@@ -38,10 +38,6 @@ func save(sch schedule) string {
 	return db.saveSchedule(schedule{})
 }
 
-func newDBConn() database {
-	return &sqllite{}
-}
-
 func makeQuery(c Customer) {
 	t, err := template.New("search-request").Parse(tmpl)
 	//t, err := template.New("search-request").ParseFiles("search-request.txt")

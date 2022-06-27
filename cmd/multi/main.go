@@ -28,7 +28,7 @@ func main() {
 	r := mux.NewRouter()
 	//r.Headers("content-Type", "application/json")
 	r.HandleFunc("/", healthz).Methods("GET")
-	r.HandleFunc("/api/v1/multi/searches/customers", scheduleBatch).Methods("POST")
+	r.HandleFunc("/api/v1/multi/searches/customers", scheduleCustomerSearch).Methods("POST")
 	r.HandleFunc("/api/v1/multi/searches/customers/{id}", scheduledBatchInfo).Methods("GET")
 	r.HandleFunc("/api/v1/multi/searches/customers/{id}/searches/{id}", updateSearchResult).Methods("PUT")
 	r.MethodNotAllowedHandler = MethodNotAllowedHandler()
@@ -60,14 +60,15 @@ func main() {
 }
 
 //Scheduler schedules requests on dispatchers
-func scheduleBatch(w http.ResponseWriter, req *http.Request) {
+func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
 	cs, err := parseCustomer(req)
+	id := internal.SaveBatch(internal.CustomerSearchType, cs)
 	if err != nil {
 		log.Errorf("Error parsing customer")
 	}
-	internal.Schedule(&cs.Customers)
+
 	w.WriteHeader(200)
-	w.Write([]byte("scheduled"))
+	w.Write([]byte("scheduled " + id))
 }
 
 func scheduledBatchInfo(w http.ResponseWriter, req *http.Request) {
