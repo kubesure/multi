@@ -1,7 +1,7 @@
 CREATE TABLE batch (
 	id	                TEXT PRIMARY KEY,
 	type    	        INTEGER,
-	created_datetime	TEXT,
+	created_datetime    TEXT,
     updated_datetime    TEXT
 );
 
@@ -24,7 +24,7 @@ create table schedule (
     start_datetime      TEXT,
     end_datetime        TEXT,
     scheduled_count INTEGER
-)
+);
 
 
 

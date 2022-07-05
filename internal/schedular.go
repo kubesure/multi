@@ -34,8 +34,9 @@ func Schedule(customers *[]Customer) ScheduleResult {
 }
 
 func save(sch schedule) string {
-	db := newDBConn()
-	return db.saveSchedule(schedule{})
+	//db := newDBConn()
+	//return db.saveSchedule(schedule{})
+	return ""
 }
 
 func makeQuery(c Customer) {

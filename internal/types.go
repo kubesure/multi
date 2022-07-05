@@ -32,11 +32,12 @@ type job struct {
 type database interface {
 	getSchedule(id string) *schedule
 	saveSchedule(s schedule) (id string)
-	saveBatch(b batch) (id string)
+	saveBatch(b batch, jobs []job) (id string, err error)
 	getBatch(id string) *batch
-	saveJob(j job) (id string)
+	//saveJob(j job) (id string)
 	getJob(id string) *job
 	getJobs(batchID string) []job
+	close() error
 }
 
 type BatchType int

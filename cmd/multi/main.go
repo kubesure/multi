@@ -62,11 +62,13 @@ func main() {
 //Scheduler schedules requests on dispatchers
 func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
 	cs, err := parseCustomer(req)
-	id := internal.SaveBatch(internal.CustomerSearchType, cs)
 	if err != nil {
 		log.Errorf("Error parsing customer")
 	}
-
+	id, err1 := internal.SaveBatch(internal.CustomerSearchType, cs)
+	if err1 != nil {
+		log.Errorf("Error saving customer")
+	}
 	w.WriteHeader(200)
 	w.Write([]byte("scheduled " + id))
 }

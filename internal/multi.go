@@ -12,10 +12,18 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
-func SaveBatch(batchType BatchType, c CustomerSearch) (id string) {
-	return ""
-}
+func SaveBatch(batchType BatchType, c CustomerSearch) (id string, err error) {
+	db, err := newDBConn()
+	defer db.close()
+	if err != nil {
+		return "", err
+	}
 
-func newDBConn() database {
-	return &sqllite{}
+	b := batch{ttype: batchType}
+	jobs := []job{}
+	id, err1 := db.saveBatch(b, jobs)
+	if err1 != nil {
+		return "", err1
+	}
+	return "", nil
 }
