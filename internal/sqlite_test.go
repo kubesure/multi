@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"log"
 	"testing"
 )
 
@@ -12,12 +11,43 @@ func TestSaveBatch(t *testing.T) {
 	}
 	id, errsave := db.saveBatch(batchs(), jobs())
 	if errsave != nil {
-		log.Println(errsave)
 		t.Errorf("should have saved")
 	}
 
 	if len(id) == 0 {
 		t.Errorf("did not get id from save op")
+	}
+}
+
+func TestGetBatchFound(t *testing.T) {
+	db, err := newDBConn()
+	if err != nil {
+		t.Errorf("should have had not got a db conn error")
+	}
+	b, err := db.getBatch("30c42b49-98d3-47b0-969c-65754f9052a2")
+
+	if err != nil {
+		t.Errorf("Should have reterived batch")
+	}
+
+	if b.id != "30c42b49-98d3-47b0-969c-65754f9052a2" {
+		t.Errorf("cannot reterive id")
+	}
+}
+
+func TestGetBatchNotFound(t *testing.T) {
+	db, err := newDBConn()
+	if err != nil {
+		t.Errorf("should have had not got a db conn error")
+	}
+	b, err := db.getBatch("30c42b49-98d3-47b0-969c-65754f9052a")
+
+	if err != nil {
+		t.Errorf("Should not be an error it should be nil batch")
+	}
+
+	if b != nil {
+		t.Errorf("Record should not have been found")
 	}
 }
 

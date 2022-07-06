@@ -1,5 +1,11 @@
 package internal
 
+import (
+	"time"
+
+	"github.com/kubesure/multi"
+)
+
 type CustomerSearch struct {
 	MaxResponseTimeSeconds uint       `json:"maxResponseTimeSeconds"`
 	Customers              []Customer `json:"customers"`
@@ -20,8 +26,9 @@ type schedule struct {
 }
 
 type batch struct {
-	batchID, createdDate, updatedDate string
-	ttype                             BatchType
+	id                       string
+	createdDate, updatedDate time.Time
+	ttype                    BatchType
 }
 
 type job struct {
@@ -30,14 +37,14 @@ type job struct {
 }
 
 type database interface {
-	getSchedule(id string) *schedule
-	saveSchedule(s schedule) (id string)
-	saveBatch(b batch, jobs []job) (id string, err error)
-	getBatch(id string) *batch
-	//saveJob(j job) (id string)
-	getJob(id string) *job
-	getJobs(batchID string) []job
-	close() error
+	getSchedule(id string) (*schedule, *multi.Error)
+	saveSchedule(s schedule) (string, *multi.Error)
+	saveBatch(b batch, jobs []job) (id string, err *multi.Error)
+	getBatch(id string) (*batch, *multi.Error)
+	saveJob(j job) (id string, err *multi.Error)
+	getJob(id string) (*job, *multi.Error)
+	getJobs(batchID string) ([]job, *multi.Error)
+	close() *multi.Error
 }
 
 type BatchType int

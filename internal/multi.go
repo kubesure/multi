@@ -3,6 +3,7 @@ package internal
 import (
 	"os"
 
+	"github.com/kubesure/multi"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,7 +13,7 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
-func SaveBatch(batchType BatchType, c CustomerSearch) (id string, err error) {
+func SaveBatch(batchType BatchType, c CustomerSearch) (id string, err *multi.Error) {
 	db, err := newDBConn()
 	defer db.close()
 	if err != nil {
