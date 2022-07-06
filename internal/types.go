@@ -26,14 +26,18 @@ type schedule struct {
 }
 
 type batch struct {
-	id                       string
-	createdDate, updatedDate time.Time
-	ttype                    BatchType
+	id                               string
+	createdDateTime, updatedDateTime time.Time
+	ttype                            BatchType
+	jobs                             []job
 }
 
 type job struct {
-	id, maxResponse, retryInterval, retryCount                           uint
-	batchId, payload, status, errorMsg, createdDateTime, updatedDateTime string
+	id, maxResponse, retryInterval   uint
+	batchId, payload, status         string
+	errorMsg                         string
+	retryCount                       uint
+	createdDateTime, updatedDateTime time.Time
 }
 
 type database interface {
