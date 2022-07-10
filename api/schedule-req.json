@@ -1,5 +1,6 @@
 {
     "maxResponseTimeSeconds": "5",
+    "httpEndpoint": "http//locahost/customerssearch/",
     "customers":[
         {
             "firstName": "Pete",

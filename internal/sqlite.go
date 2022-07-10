@@ -10,11 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type sqllite struct {
+type sqlite struct {
 	sqlite3 *sql.DB
 }
 
-func (db *sqllite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) {
+func (db *sqlite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) {
 	log := multi.NewLogger()
 	tx, txerr := db.sqlite3.Begin()
 	if txerr != nil {
@@ -37,14 +37,14 @@ func (db *sqllite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) 
 		return "", err
 	}
 
-	insertSQL := "INSERT INTO job(id,batch_id,payload,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
-		"VALUES (?,?,?,?,?,?,?,?,?,?)"
+	insertSQL := "INSERT INTO job(id,batch_id,payload,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 	jobStmt, joberr := tx.Prepare(insertSQL)
 	if joberr != nil {
 		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 	for index, job := range jobs {
-		_, joberr = jobStmt.Exec(index+1, batchId, job.payload, "created", job.errorMsg, job.maxResponse, job.retryInterval, job.retryCount, currentDateTime(), currentDateTime())
+		_, joberr = jobStmt.Exec(index+1, batchId, job.payload, job.endPoint, CREATED, job.errorMsg, job.maxResponse, job.retryInterval, job.retryCount, currentDateTime(), currentDateTime())
 		if joberr != nil {
 			tx.Rollback()
 			log.LogInternalError(joberr.Error())
@@ -61,7 +61,7 @@ func (db *sqllite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) 
 	return batchId, nil
 }
 
-func (db *sqllite) getBatch(id string) (*batch, *multi.Error) {
+func (db *sqlite) getBatch(id string) (*batch, *multi.Error) {
 	log := multi.NewLogger()
 	row, qerr := db.sqlite3.Query("select id,type, created_datetime, updated_datetime from batch where id=?", id)
 
@@ -78,23 +78,57 @@ func (db *sqllite) getBatch(id string) (*batch, *multi.Error) {
 		row.Scan(&b.id, &b.ttype, &created_datetime, &updated_datetime)
 		b.createdDateTime = *parseDateTime(created_datetime)
 		b.updatedDateTime = *parseDateTime(updated_datetime)
+		jobs, jerr := db.getJobs(id)
+		if jerr != nil {
+			return nil, jerr
+		}
+		b.jobs = jobs
 	}
-	jobs, jerr := db.getJobs(id)
-	if jerr != nil {
-		return nil, jerr
-	}
-	b.jobs = jobs
+
 	return b, nil
 }
 
-func (db *sqllite) getJobs(batchID string) ([]job, *multi.Error) {
+func (db *sqlite) getJobs(batchID string) ([]job, *multi.Error) {
 	log := multi.NewLogger()
-	q := "select id,batch_id,payload,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=?"
-	rows, qerr := db.sqlite3.Query(q, batchID)
+	q := "select id,batch_id,payload,endpoint,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=?"
+	jobs, err := db.getjobs(q, batchID)
+	if err != nil {
+		log.LogInternalError(err.Inner.Error())
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+
+	return jobs, nil
+}
+
+func (db *sqlite) getJob(jobID, batchID string) (*job, *multi.Error) {
+	q := "select id,batch_id,payload,endpoint,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=? and id = ?"
+	log := multi.NewLogger()
+	jobs, err := db.getjobs(q, batchID, jobID)
+
+	if err != nil {
+		log.LogInternalError(err.Inner.Error())
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+
+	if len(jobs) == 1 {
+		return &jobs[0], nil
+	}
+	return nil, nil
+}
+
+func (db *sqlite) getjobs(query string, id ...string) ([]job, *multi.Error) {
+	log := multi.NewLogger()
+	var qerr error
+	var rows *sql.Rows
+	if len(id) > 1 {
+		rows, qerr = db.sqlite3.Query(query, id[0], id[1])
+	} else {
+		rows, qerr = db.sqlite3.Query(query, id[0])
+	}
 
 	if qerr != nil {
 		log.LogInternalError(qerr.Error())
-		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: qerr}
 	}
 
 	defer rows.Close()
@@ -104,7 +138,7 @@ func (db *sqllite) getJobs(batchID string) ([]job, *multi.Error) {
 		var created_datetime, updated_datetime string
 		var errormsg sql.NullString
 		var retrycount sql.NullInt32
-		rows.Scan(&j.id, &j.batchId, &j.payload, &j.status, &created_datetime,
+		rows.Scan(&j.id, &j.batchId, &j.payload, &j.endPoint, &j.status, &created_datetime,
 			&updated_datetime, &j.maxResponse, &j.retryInterval, &errormsg, &retrycount)
 		if errormsg.Valid {
 			j.errorMsg = errormsg.String
@@ -121,37 +155,66 @@ func (db *sqllite) getJobs(batchID string) ([]job, *multi.Error) {
 		j.updatedDateTime = *parseDateTime(updated_datetime)
 		jobs = append(jobs, j)
 	}
-
 	return jobs, nil
 }
 
-func (db *sqllite) saveJob(j job) (id string, err *multi.Error) {
-	return "", nil
-}
-
-func (db *sqllite) getJob(id string) (*job, *multi.Error) {
-	return nil, nil
-}
-
-func (db *sqllite) getSchedule(id string) (*schedule, *multi.Error) {
-	return nil, nil
-}
-
-func (db *sqllite) saveSchedule(s schedule) (id string, err *multi.Error) {
-	return "", nil
-}
-
-func (db *sqllite) close() *multi.Error {
+func (db *sqlite) saveJob(batchId string, j job) (err *multi.Error) {
+	log := multi.NewLogger()
+	insertSQL := "INSERT INTO job(id,batch_id,payload,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+	jobStmt, joberr := db.sqlite3.Prepare(insertSQL)
+	if joberr != nil {
+		log.LogInternalError(joberr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+	_, joberr = jobStmt.Exec(j.id, batchId, j.payload, j.endPoint, j.status, j.errorMsg, j.maxResponse, j.retryInterval, j.retryCount, currentDateTime(), currentDateTime())
+	if joberr != nil {
+		log.LogInternalError(joberr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
 	return nil
+}
+
+func (db *sqlite) updateJob(j job) (err *multi.Error) {
+	log := multi.NewLogger()
+	insertSQL := "UPDATE job SET status = ?, error_msg = ?,retry_count = ? ,updated_datetime = ? where id = ? and batch_id= ?"
+	jobStmt, joberr := db.sqlite3.Prepare(insertSQL)
+	if joberr != nil {
+		log.LogInternalError(joberr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+	_, joberr = jobStmt.Exec(j.status, j.errorMsg, j.retryCount, currentDateTime(), j.id, j.batchId)
+	if joberr != nil {
+		log.LogInternalError(joberr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+	return nil
+}
+
+func (db *sqlite) getSchedule(id string) (*schedule, *multi.Error) {
+	return nil, nil
+}
+
+func (db *sqlite) saveSchedule(s schedule) (id string, err *multi.Error) {
+	return "", nil
+}
+
+func (db *sqlite) close() *multi.Error {
+	log := multi.NewLogger()
+	err := db.sqlite3.Close()
+	if err != nil {
+		log.LogInternalError(err.Error())
+	}
+	return &multi.Error{Code: multi.InternalError, Message: "Error while closing db connection"}
 }
 
 func newDBConn() (database, *multi.Error) {
 	db, err := sql.Open("sqlite3", "../db/schedular.db")
 	if err != nil {
 		log.Println(err)
-		return nil, &multi.Error{Code: multi.InternalError, Message: "DB Transaction Error"}
+		return nil, &multi.Error{Code: multi.InternalError, Message: "Error opening schedular database"}
 	}
-	return &sqllite{sqlite3: db}, nil
+	return &sqlite{sqlite3: db}, nil
 }
 
 func currentDateTime() string {

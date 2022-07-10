@@ -9,6 +9,7 @@ create TABLE job (
     id                    INTEGER,
     batch_id              TEXT,
     payload               TEXT,
+    endpoint              TEXT,  
     status                TEXT,
     error_msg             TEXT,
     max_response          INTEGER,

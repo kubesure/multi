@@ -23,6 +23,9 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
+type CustomerScheduleRes struct {
+}
+
 func main() {
 
 	r := mux.NewRouter()
@@ -69,7 +72,7 @@ func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
 	if err1 != nil {
 		log.Errorf("Error saving customer")
 	}
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("scheduled " + id))
 }
 
