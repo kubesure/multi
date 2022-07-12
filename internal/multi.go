@@ -14,7 +14,7 @@ func init() {
 }
 
 func SaveBatch(batchType BatchType, c CustomerSearch) (id string, err *multi.Error) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	defer db.close()
 	if err != nil {
 		return "", err

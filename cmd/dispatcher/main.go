@@ -20,7 +20,7 @@ func main() {
 	log.Info("dispatcher starting...")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", healthz)
-	mux.HandleFunc("/api/v1/bulksearches/batches/dispatch", dispatch)
+	mux.HandleFunc("/api/v1/multi/batches", dispatch)
 	srv := http.Server{Addr: ":8000", Handler: mux}
 	ctx := context.Background()
 	c := make(chan os.Signal, 1)
@@ -49,8 +49,8 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(data))
 }
 
-//Dispatchs search to forkjoin grpc service
 func dispatch(w http.ResponseWriter, req *http.Request) {
+
 	go execute(req.Context())
 }
 

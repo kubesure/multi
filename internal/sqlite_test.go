@@ -5,7 +5,7 @@ import (
 )
 
 func TestSaveBatch(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -20,7 +20,7 @@ func TestSaveBatch(t *testing.T) {
 }
 
 func TestGetBatchFound(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -36,7 +36,7 @@ func TestGetBatchFound(t *testing.T) {
 }
 
 func TestGetBatchNotFound(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -52,7 +52,7 @@ func TestGetBatchNotFound(t *testing.T) {
 }
 
 func TestGetJobs(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -68,7 +68,7 @@ func TestGetJobs(t *testing.T) {
 }
 
 func TestGetJob(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -78,14 +78,14 @@ func TestGetJob(t *testing.T) {
 		t.Errorf("Should have reterived job")
 	}
 
-	if job.id != 1 {
+	if job.Id != 1 {
 		t.Errorf("should have reterived job id 1")
 	}
 
 }
 
 func TestSaveJob(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -97,14 +97,14 @@ func TestSaveJob(t *testing.T) {
 }
 
 func TestUpdateJob(t *testing.T) {
-	db, err := newDBConn()
+	db, err := newDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
 
 	j := jobs()[0]
-	j.status = string(COMPLETED)
-	j.batchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
+	j.Status = string(COMPLETED)
+	j.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
 	errupdate := db.updateJob(j)
 	if errupdate != nil {
 		t.Errorf("should have updated job")
@@ -113,23 +113,23 @@ func TestUpdateJob(t *testing.T) {
 
 func jobs() []job {
 	j1 := job{}
-	j1.id = 4
-	j1.payload = "payload"
-	j1.endPoint = "http://localhost/customer/search"
-	j1.maxResponse = 5
-	j1.retryInterval = 3
-	j1.errorMsg = "error msg"
-	j1.retryCount = 10
-	j1.status = string(CREATED)
+	j1.Id = 4
+	j1.Payload = "payload"
+	j1.EndPoint = "http://localhost/customer/search"
+	j1.MaxResponse = 5
+	j1.RetryInterval = 3
+	j1.ErrorMsg = "error msg"
+	j1.RetryCount = 10
+	j1.Status = string(CREATED)
 
 	j2 := job{}
-	j2.payload = "payload"
-	j2.endPoint = "http://localhost/customer/search"
-	j2.maxResponse = 5
-	j2.retryInterval = 3
-	j2.errorMsg = "error msg"
-	j2.retryCount = 10
-	j2.status = string(CREATED)
+	j2.Payload = "payload"
+	j2.EndPoint = "http://localhost/customer/search"
+	j2.MaxResponse = 5
+	j2.RetryInterval = 3
+	j2.ErrorMsg = "error msg"
+	j2.RetryCount = 10
+	j2.Status = string(CREATED)
 
 	jobs := make([]job, 0)
 	jobs = append(jobs, j1)

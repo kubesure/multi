@@ -1,0 +1,17 @@
+{
+    "jobs":[
+        {
+            "id" : 1,
+            "batchId" : "45a515a1-9f8b-45ca-aad1-a81e11108a68",
+            "payLoad": "payload",
+            "endPoint": "http://localhost/endpoint",
+            "status" : "CREATED",
+            "errorMessage" : "",
+            "maxResponseTimeSeconds" : 10,
+            "retryInterval" : 5,
+            "retryCount" : 0,
+            "createdDate" : "",
+            "updateDate" : ""
+        }
+    ]
+}

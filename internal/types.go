@@ -33,11 +33,17 @@ type batch struct {
 }
 
 type job struct {
-	id, maxResponse, retryInterval   uint
-	batchId, payload, status         string
-	errorMsg, endPoint               string
-	retryCount                       uint
-	createdDateTime, updatedDateTime time.Time
+	Id              uint      `json:"id"`
+	MaxResponse     uint      `json:"maxResponseTimeSeconds"`
+	RetryInterval   uint      `json:"retryInterval"`
+	BatchId         string    `json:"batchId"`
+	Payload         string    `json:"payload"`
+	Status          string    `json:"status"`
+	ErrorMsg        string    `json:"errorMessage"`
+	EndPoint        string    `json:"endPoimt"`
+	RetryCount      uint      `json:"retryCount"`
+	CreatedDateTime time.Time `json:"createdDateTime"`
+	UpdatedDateTime time.Time `json:"updatedDateTime"`
 }
 
 type database interface {
@@ -63,4 +69,17 @@ type jobstatus string
 const (
 	CREATED   jobstatus = "CREATED"
 	COMPLETED jobstatus = "COMPLETED"
+)
+
+type dbname string
+
+const (
+	SCHEDULAR  dbname = "../db/schedular.db"
+	DISPATCHER dbname = "../db/dispatcher.db"
+)
+
+type dbtype string
+
+const (
+	SQLITE dbtype = "sqlite3"
 )
