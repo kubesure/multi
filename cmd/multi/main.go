@@ -11,6 +11,7 @@ import (
 	"time"
 
 	internal "github.com/kubesure/multi/internal"
+	mi "github.com/kubesure/multi/internal/multi"
 
 	log "github.com/sirupsen/logrus"
 
@@ -68,7 +69,7 @@ func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Errorf("Error parsing customer")
 	}
-	id, err1 := internal.SaveBatch(internal.CustomerSearchType, cs)
+	id, err1 := mi.SaveBatch(internal.CustomerSearchType, cs)
 	if err1 != nil {
 		log.Errorf("Error saving customer")
 	}

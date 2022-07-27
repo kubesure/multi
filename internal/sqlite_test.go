@@ -5,11 +5,11 @@ import (
 )
 
 func TestSaveBatch(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	id, errsave := db.saveBatch(batchs(), jobs())
+	id, errsave := db.SaveBatch(batchs(), jobs())
 	if errsave != nil {
 		t.Errorf("should have saved batch ")
 	}
@@ -20,11 +20,11 @@ func TestSaveBatch(t *testing.T) {
 }
 
 func TestGetBatchFound(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	b, err := db.getBatch("45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	b, err := db.GetBatch("45a515a1-9f8b-45ca-aad1-a81e11108a68")
 
 	if err != nil {
 		t.Errorf("Should have reterived batch")
@@ -36,11 +36,11 @@ func TestGetBatchFound(t *testing.T) {
 }
 
 func TestGetBatchNotFound(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	b, err := db.getBatch("30c42b49-98d3-47b0-969c-65754f9052a")
+	b, err := db.GetBatch("30c42b49-98d3-47b0-969c-65754f9052a")
 
 	if err != nil {
 		t.Errorf("Should not be an error it should be nil batch")
@@ -52,11 +52,11 @@ func TestGetBatchNotFound(t *testing.T) {
 }
 
 func TestGetJobs(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	jobs, err := db.getJobs("45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	jobs, err := db.GetJobs("45a515a1-9f8b-45ca-aad1-a81e11108a68")
 
 	if err != nil {
 		t.Errorf("Should have reterived jobs")
@@ -68,11 +68,11 @@ func TestGetJobs(t *testing.T) {
 }
 
 func TestGetJob(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	job, err := db.getJob("1", "45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	job, err := db.GetJob("1", "45a515a1-9f8b-45ca-aad1-a81e11108a68")
 
 	if err != nil {
 		t.Errorf("Should have reterived job")
@@ -85,19 +85,19 @@ func TestGetJob(t *testing.T) {
 }
 
 func TestSaveJob(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
 
-	errsave := db.saveJob("45a515a1-9f8b-45ca-aad1-a81e11108a68", jobs()[0])
+	errsave := db.SaveJob(jobs()[0])
 	if errsave != nil {
 		t.Errorf("should have saved job")
 	}
 }
 
 func TestUpdateJob(t *testing.T) {
-	db, err := newDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn(SCHEDULAR, SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -105,15 +105,16 @@ func TestUpdateJob(t *testing.T) {
 	j := jobs()[0]
 	j.Status = string(COMPLETED)
 	j.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
-	errupdate := db.updateJob(j)
+	errupdate := db.UpdateJob(j)
 	if errupdate != nil {
 		t.Errorf("should have updated job")
 	}
 }
 
-func jobs() []job {
-	j1 := job{}
-	j1.Id = 4
+func jobs() []Job {
+	j1 := Job{}
+	j1.Id = 5
+	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
 	j1.Payload = "payload"
 	j1.EndPoint = "http://localhost/customer/search"
 	j1.MaxResponse = 5
@@ -122,7 +123,7 @@ func jobs() []job {
 	j1.RetryCount = 10
 	j1.Status = string(CREATED)
 
-	j2 := job{}
+	j2 := Job{}
 	j2.Payload = "payload"
 	j2.EndPoint = "http://localhost/customer/search"
 	j2.MaxResponse = 5
@@ -131,12 +132,12 @@ func jobs() []job {
 	j2.RetryCount = 10
 	j2.Status = string(CREATED)
 
-	jobs := make([]job, 0)
+	jobs := make([]Job, 0)
 	jobs = append(jobs, j1)
 	jobs = append(jobs, j2)
 	return jobs
 }
 
-func batchs() batch {
-	return batch{ttype: CustomerSearchType}
+func batchs() Batch {
+	return Batch{Type: CustomerSearchType}
 }

@@ -14,7 +14,7 @@ type sqlite struct {
 	sqlite3 *sql.DB
 }
 
-func (db *sqlite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) {
+func (db *sqlite) SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error) {
 	log := multi.NewLogger()
 	tx, txerr := db.sqlite3.Begin()
 	if txerr != nil {
@@ -30,7 +30,7 @@ func (db *sqlite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) {
 
 	batchId := uuid.New().String()
 
-	_, err1 := stmt.Exec(batchId, b.ttype, currentDateTime(), currentDateTime())
+	_, err1 := stmt.Exec(batchId, b.Type, currentDateTime(), currentDateTime())
 	defer stmt.Close()
 	if err1 != nil {
 		log.LogInternalError(err1.Error())
@@ -61,7 +61,7 @@ func (db *sqlite) saveBatch(b batch, jobs []job) (id string, err *multi.Error) {
 	return batchId, nil
 }
 
-func (db *sqlite) getBatch(id string) (*batch, *multi.Error) {
+func (db *sqlite) GetBatch(id string) (*Batch, *multi.Error) {
 	log := multi.NewLogger()
 	row, qerr := db.sqlite3.Query("select id,type, created_datetime, updated_datetime from batch where id=?", id)
 
@@ -71,14 +71,14 @@ func (db *sqlite) getBatch(id string) (*batch, *multi.Error) {
 	}
 
 	defer row.Close()
-	var b *batch
+	var b *Batch
 	for row.Next() {
-		b = &batch{}
+		b = &Batch{}
 		var created_datetime, updated_datetime string
-		row.Scan(&b.id, &b.ttype, &created_datetime, &updated_datetime)
+		row.Scan(&b.id, &b.Type, &created_datetime, &updated_datetime)
 		b.createdDateTime = *parseDateTime(created_datetime)
 		b.updatedDateTime = *parseDateTime(updated_datetime)
-		jobs, jerr := db.getJobs(id)
+		jobs, jerr := db.GetJobs(id)
 		if jerr != nil {
 			return nil, jerr
 		}
@@ -88,10 +88,10 @@ func (db *sqlite) getBatch(id string) (*batch, *multi.Error) {
 	return b, nil
 }
 
-func (db *sqlite) getJobs(batchID string) ([]job, *multi.Error) {
+func (db *sqlite) GetJobs(batchID string) ([]Job, *multi.Error) {
 	log := multi.NewLogger()
 	q := "select id,batch_id,payload,endpoint,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=?"
-	jobs, err := db.getjobs(q, batchID)
+	jobs, err := db.Getjobs(q, batchID)
 	if err != nil {
 		log.LogInternalError(err.Inner.Error())
 		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
@@ -100,10 +100,10 @@ func (db *sqlite) getJobs(batchID string) ([]job, *multi.Error) {
 	return jobs, nil
 }
 
-func (db *sqlite) getJob(jobID, batchID string) (*job, *multi.Error) {
+func (db *sqlite) GetJob(jobID, batchID string) (*Job, *multi.Error) {
 	q := "select id,batch_id,payload,endpoint,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=? and id = ?"
 	log := multi.NewLogger()
-	jobs, err := db.getjobs(q, batchID, jobID)
+	jobs, err := db.Getjobs(q, batchID, jobID)
 
 	if err != nil {
 		log.LogInternalError(err.Inner.Error())
@@ -116,7 +116,7 @@ func (db *sqlite) getJob(jobID, batchID string) (*job, *multi.Error) {
 	return nil, nil
 }
 
-func (db *sqlite) getjobs(query string, id ...string) ([]job, *multi.Error) {
+func (db *sqlite) Getjobs(query string, id ...string) ([]Job, *multi.Error) {
 	log := multi.NewLogger()
 	var qerr error
 	var rows *sql.Rows
@@ -132,9 +132,9 @@ func (db *sqlite) getjobs(query string, id ...string) ([]job, *multi.Error) {
 	}
 
 	defer rows.Close()
-	jobs := make([]job, 0)
+	jobs := make([]Job, 0)
 	for rows.Next() {
-		j := job{}
+		j := Job{}
 		var created_datetime, updated_datetime string
 		var errormsg sql.NullString
 		var retrycount sql.NullInt32
@@ -158,7 +158,7 @@ func (db *sqlite) getjobs(query string, id ...string) ([]job, *multi.Error) {
 	return jobs, nil
 }
 
-func (db *sqlite) saveJob(batchId string, j job) (err *multi.Error) {
+func (db *sqlite) SaveJob(j Job) (err *multi.Error) {
 	log := multi.NewLogger()
 	insertSQL := "INSERT INTO job(id,batch_id,payload,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
 		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
@@ -167,7 +167,7 @@ func (db *sqlite) saveJob(batchId string, j job) (err *multi.Error) {
 		log.LogInternalError(joberr.Error())
 		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
-	_, joberr = jobStmt.Exec(j.Id, batchId, j.Payload, j.EndPoint, j.Status, j.ErrorMsg, j.MaxResponse, j.RetryInterval, j.RetryCount, currentDateTime(), currentDateTime())
+	_, joberr = jobStmt.Exec(j.Id, j.BatchId, j.Payload, j.EndPoint, j.Status, j.ErrorMsg, j.MaxResponse, j.RetryInterval, j.RetryCount, currentDateTime(), currentDateTime())
 	if joberr != nil {
 		log.LogInternalError(joberr.Error())
 		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
@@ -175,7 +175,7 @@ func (db *sqlite) saveJob(batchId string, j job) (err *multi.Error) {
 	return nil
 }
 
-func (db *sqlite) updateJob(j job) (err *multi.Error) {
+func (db *sqlite) UpdateJob(j Job) (err *multi.Error) {
 	log := multi.NewLogger()
 	insertSQL := "UPDATE job SET status = ?, error_msg = ?,retry_count = ? ,updated_datetime = ? where id = ? and batch_id= ?"
 	jobStmt, joberr := db.sqlite3.Prepare(insertSQL)
@@ -191,15 +191,15 @@ func (db *sqlite) updateJob(j job) (err *multi.Error) {
 	return nil
 }
 
-func (db *sqlite) getSchedule(id string) (*schedule, *multi.Error) {
+func (db *sqlite) GetSchedule(id string) (*schedule, *multi.Error) {
 	return nil, nil
 }
 
-func (db *sqlite) saveSchedule(s schedule) (id string, err *multi.Error) {
+func (db *sqlite) SaveSchedule(s schedule) (id string, err *multi.Error) {
 	return "", nil
 }
 
-func (db *sqlite) close() *multi.Error {
+func (db *sqlite) Close() *multi.Error {
 	log := multi.NewLogger()
 	err := db.sqlite3.Close()
 	if err != nil {
@@ -208,7 +208,7 @@ func (db *sqlite) close() *multi.Error {
 	return &multi.Error{Code: multi.InternalError, Message: "Error while closing db connection"}
 }
 
-func newDBConn(name dbname, dbtype dbtype) (database, *multi.Error) {
+func NewDBConn(name dbname, dbtype dbtype) (database, *multi.Error) {
 	db, err := sql.Open(string(dbtype), string(name))
 	if err != nil {
 		log.Println(err)

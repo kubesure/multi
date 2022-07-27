@@ -22,17 +22,17 @@ type ScheduleResult struct {
 
 type schedule struct {
 	id, startDateTime, endDateTime string
-	batch                          batch
+	batch                          Batch
 }
 
-type batch struct {
+type Batch struct {
 	id                               string
 	createdDateTime, updatedDateTime time.Time
-	ttype                            BatchType
-	jobs                             []job
+	Type                             BatchType
+	jobs                             []Job
 }
 
-type job struct {
+type Job struct {
 	Id              uint      `json:"id"`
 	MaxResponse     uint      `json:"maxResponseTimeSeconds"`
 	RetryInterval   uint      `json:"retryInterval"`
@@ -47,15 +47,15 @@ type job struct {
 }
 
 type database interface {
-	getSchedule(id string) (*schedule, *multi.Error)
-	saveSchedule(s schedule) (string, *multi.Error)
-	saveBatch(b batch, jobs []job) (id string, err *multi.Error)
-	getBatch(id string) (*batch, *multi.Error)
-	updateJob(j job) (err *multi.Error)
-	saveJob(batchID string, j job) (err *multi.Error)
-	getJob(jobID, batchID string) (*job, *multi.Error)
-	getJobs(batchID string) ([]job, *multi.Error)
-	close() *multi.Error
+	GetSchedule(id string) (*schedule, *multi.Error)
+	SaveSchedule(s schedule) (string, *multi.Error)
+	SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error)
+	GetBatch(id string) (*Batch, *multi.Error)
+	UpdateJob(j Job) (err *multi.Error)
+	SaveJob(j Job) (err *multi.Error)
+	GetJob(jobID, batchID string) (*Job, *multi.Error)
+	GetJobs(batchID string) ([]Job, *multi.Error)
+	Close() *multi.Error
 }
 
 type BatchType int
