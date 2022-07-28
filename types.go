@@ -21,14 +21,21 @@ type Error struct {
 	Misc       map[string]interface{}
 }
 
-type EventCode int32
+type EventCode int
 
 const (
 	InternalError EventCode = iota
+	HTTPError
 )
 
 type ErrorMessage string
 
 const (
-	DBError ErrorMessage = "DB Transaction Error"
+	DBError          ErrorMessage = "DB Transaction Error"
+	HTTPRequestError ErrorMessage = "HTTP Request Invalid"
 )
+
+type Erroresponse struct {
+	Code    EventCode    `json:"errorCode"`
+	Message ErrorMessage `json:"errorMessage"`
+}

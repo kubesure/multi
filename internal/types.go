@@ -40,7 +40,7 @@ type Job struct {
 	Payload         string    `json:"payload"`
 	Status          string    `json:"status"`
 	ErrorMsg        string    `json:"errorMessage"`
-	EndPoint        string    `json:"endPoimt"`
+	EndPoint        string    `json:"endPoint"`
 	RetryCount      uint      `json:"retryCount"`
 	CreatedDateTime time.Time `json:"createdDateTime"`
 	UpdatedDateTime time.Time `json:"updatedDateTime"`
@@ -52,7 +52,7 @@ type database interface {
 	SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error)
 	GetBatch(id string) (*Batch, *multi.Error)
 	UpdateJob(j Job) (err *multi.Error)
-	SaveJob(j Job) (err *multi.Error)
+	SaveJob(j *Job) (err *multi.Error)
 	GetJob(jobID, batchID string) (*Job, *multi.Error)
 	GetJobs(batchID string) ([]Job, *multi.Error)
 	Close() *multi.Error
@@ -75,7 +75,7 @@ type dbname string
 
 const (
 	SCHEDULAR  dbname = "../db/schedular.db"
-	DISPATCHER dbname = "../db/dispatcher.db"
+	DISPATCHER dbname = "../../db/dispatcher.db"
 )
 
 type dbtype string

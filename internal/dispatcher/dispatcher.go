@@ -5,7 +5,7 @@ import (
 	"github.com/kubesure/multi/internal"
 )
 
-func SaveJob(j internal.Job) *multi.Error {
+func SaveJob(j *internal.Job) *multi.Error {
 	db, err := internal.NewDBConn(internal.DISPATCHER, internal.SQLITE)
 
 	defer db.Close()

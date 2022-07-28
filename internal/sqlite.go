@@ -158,7 +158,7 @@ func (db *sqlite) Getjobs(query string, id ...string) ([]Job, *multi.Error) {
 	return jobs, nil
 }
 
-func (db *sqlite) SaveJob(j Job) (err *multi.Error) {
+func (db *sqlite) SaveJob(j *Job) (err *multi.Error) {
 	log := multi.NewLogger()
 	insertSQL := "INSERT INTO job(id,batch_id,payload,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
 		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"

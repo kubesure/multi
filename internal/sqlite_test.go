@@ -90,7 +90,7 @@ func TestSaveJob(t *testing.T) {
 		t.Errorf("should have had not got a db conn error")
 	}
 
-	errsave := db.SaveJob(jobs()[0])
+	errsave := db.SaveJob(&jobs()[0])
 	if errsave != nil {
 		t.Errorf("should have saved job")
 	}
