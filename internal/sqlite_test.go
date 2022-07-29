@@ -72,13 +72,13 @@ func TestGetJob(t *testing.T) {
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	job, err := db.GetJob("1", "45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	job, err := db.GetJob("5", "45a515a1-9f8b-45ca-aad1-a81e11108a68")
 
 	if err != nil {
 		t.Errorf("Should have reterived job")
 	}
 
-	if job.Id != 1 {
+	if job.Id != 5 {
 		t.Errorf("should have reterived job id 1")
 	}
 
@@ -102,13 +102,36 @@ func TestUpdateJob(t *testing.T) {
 		t.Errorf("should have had not got a db conn error")
 	}
 
-	j := jobs()[0]
-	j.Status = string(COMPLETED)
+	j := jobUpdate()
+	status := string(COMPLETED)
+	j.Status = &status
 	j.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
+	var count uint = 17
+	j.RetryCount = &count
+	errmsg := "conn error"
+	j.ErrorMsg = &errmsg
+	res := "result"
+	j.Result = &res
 	errupdate := db.UpdateJob(j)
 	if errupdate != nil {
 		t.Errorf("should have updated job")
 	}
+}
+
+func jobUpdate() Job {
+	j1 := Job{}
+	j1.Id = 5
+	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
+	j1.Payload = "payload"
+	j1.EndPoint = "http://localhost/customer/search"
+	j1.MaxResponse = 5
+	j1.RetryInterval = 3
+	msg := "error msg"
+	j1.ErrorMsg = &msg
+	var count uint = 10
+	j1.RetryCount = &count
+	//j1.Status = string(CREATED)
+	return j1
 }
 
 func jobs() []Job {
@@ -119,18 +142,23 @@ func jobs() []Job {
 	j1.EndPoint = "http://localhost/customer/search"
 	j1.MaxResponse = 5
 	j1.RetryInterval = 3
-	j1.ErrorMsg = "error msg"
-	j1.RetryCount = 10
-	j1.Status = string(CREATED)
+	msg := "error msg"
+	j1.ErrorMsg = &msg
+	var count uint = 10
+	j1.RetryCount = &count
+	status := string(CREATED)
+	j1.Status = &status
 
 	j2 := Job{}
 	j2.Payload = "payload"
 	j2.EndPoint = "http://localhost/customer/search"
 	j2.MaxResponse = 5
 	j2.RetryInterval = 3
-	j2.ErrorMsg = "error msg"
-	j2.RetryCount = 10
-	j2.Status = string(CREATED)
+	msg = "error msg"
+	j2.ErrorMsg = &msg
+	j2.RetryCount = &count
+	status = string(CREATED)
+	j2.Status = &status
 
 	jobs := make([]Job, 0)
 	jobs = append(jobs, j1)

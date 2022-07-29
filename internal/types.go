@@ -38,10 +38,11 @@ type Job struct {
 	RetryInterval   uint      `json:"retryInterval"`
 	BatchId         string    `json:"batchId"`
 	Payload         string    `json:"payload"`
-	Status          string    `json:"status"`
-	ErrorMsg        string    `json:"errorMessage"`
+	Result          *string   `json:"result"`
+	Status          *string   `json:"status"`
+	ErrorMsg        *string   `json:"errorMessage"`
 	EndPoint        string    `json:"endPoint"`
-	RetryCount      uint      `json:"retryCount"`
+	RetryCount      *uint     `json:"retryCount"`
 	CreatedDateTime time.Time `json:"createdDateTime"`
 	UpdatedDateTime time.Time `json:"updatedDateTime"`
 }
