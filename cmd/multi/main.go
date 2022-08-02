@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/kubesure/multi"
 	internal "github.com/kubesure/multi/internal"
 	mi "github.com/kubesure/multi/internal/multi"
 
@@ -22,9 +23,6 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
-}
-
-type CustomerScheduleRes struct {
 }
 
 func main() {
@@ -63,49 +61,91 @@ func main() {
 	}
 }
 
-//Scheduler schedules requests on dispatchers
-func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
-	cs, err := parseCustomer(req)
-	if err != nil {
-		log.Errorf("Error parsing customer")
-	}
-	id, err1 := mi.SaveBatch(internal.CustomerSearchType, cs)
-	if err1 != nil {
-		log.Errorf("Error saving customer")
-	}
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("scheduled " + id))
-}
-
-func scheduledBatchInfo(w http.ResponseWriter, req *http.Request) {
-	vars := mux.Vars(req)
-	w.WriteHeader(200)
-	w.Write([]byte(fmt.Sprintf("schedule returned for %v", vars["id"])))
-}
-
-func updateSearchResult(w http.ResponseWriter, req *http.Request) {
-	w.WriteHeader(200)
-	data := (time.Now()).String()
-	log.Debug("health ok")
-	w.Write([]byte(data))
-}
-
-func parseCustomer(req *http.Request) (internal.CustomerSearch, error) {
-	body, _ := ioutil.ReadAll(req.Body)
-	cs := internal.CustomerSearch{}
-	err := json.Unmarshal([]byte(body), &cs)
-	if err != nil {
-		log.Errorf("err %v during unmarshalling data %s ", err, body)
-	}
-	return cs, err
-}
-
 //call by k8s liveness probe
 func healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	data := (time.Now()).String()
 	log.Debug("health ok")
 	w.Write([]byte(data))
+}
+
+//Scheduler schedules requests on dispatchers
+func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
+	cs, err := parseCustomer(req)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
+		data, _ := json.Marshal(erres)
+		fmt.Fprintf(w, "%s", data)
+	} else {
+		id, err1 := mi.SaveBatch(internal.CustomerSearchType, cs)
+		if err1 != nil {
+			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
+			data, _ := json.Marshal(erres)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "%s", data)
+		}
+		w.WriteHeader(http.StatusCreated)
+		// write to location header
+		w.Write([]byte("scheduled " + id))
+	}
+
+}
+
+func scheduledBatchInfo(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	batch, err := mi.GetBatch(vars["id"])
+	if err == nil {
+		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
+		data, _ := json.Marshal(erres)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		fmt.Fprintf(w, "%s", data)
+	} else {
+		data, _ := json.Marshal(batch)
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%s", data)
+	}
+}
+
+func updateSearchResult(w http.ResponseWriter, req *http.Request) {
+	j, err := praseJob(req)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
+		data, _ := json.Marshal(erres)
+		fmt.Fprintf(w, "%s", data)
+	} else {
+		err1 := mi.UpdateJob(j)
+		if err1 != nil {
+			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
+			data, _ := json.Marshal(erres)
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "%s", data)
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func parseCustomer(req *http.Request) (*internal.CustomerSearch, *multi.Error) {
+	body, _ := ioutil.ReadAll(req.Body)
+	cs := internal.CustomerSearch{}
+	err := json.Unmarshal([]byte(body), &cs)
+	if err != nil {
+		log.Errorf("err %v during unmarshalling data %s ", err, body)
+		return nil, &multi.Error{Code: multi.HTTPError, Message: multi.HTTPRequestError}
+	}
+	return &cs, nil
+}
+
+func praseJob(req *http.Request) (*internal.Job, *multi.Error) {
+	body, _ := ioutil.ReadAll(req.Body)
+	j := internal.Job{}
+	err := json.Unmarshal([]byte(body), &j)
+	if err != nil {
+		log.Errorf("err %v during unmarshalling data %s ", err, body)
+		return nil, &multi.Error{Code: multi.HTTPError, Message: multi.HTTPRequestError}
+	}
+	return &j, nil
 }
 
 func MethodNotAllowedHandler() http.Handler {

@@ -35,7 +35,7 @@ const (
 	HTTPRequestError ErrorMessage = "HTTP Request Invalid"
 )
 
-type Erroresponse struct {
+type ErroResponse struct {
 	Code    EventCode    `json:"errorCode"`
 	Message ErrorMessage `json:"errorMessage"`
 }

@@ -14,7 +14,7 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
-func SaveBatch(batchType internal.BatchType, c internal.CustomerSearch) (id string, err *multi.Error) {
+func SaveBatch(batchType internal.BatchType, c *internal.CustomerSearch) (id string, err *multi.Error) {
 	db, err := internal.NewDBConn(internal.SCHEDULAR, internal.SQLITE)
 	defer db.Close()
 	if err != nil {
@@ -28,4 +28,30 @@ func SaveBatch(batchType internal.BatchType, c internal.CustomerSearch) (id stri
 		return "", err1
 	}
 	return "", nil
+}
+
+func GetBatch(batchId string) (*internal.Batch, *multi.Error) {
+	db, err := internal.NewDBConn(internal.SCHEDULAR, internal.SQLITE)
+	defer db.Close()
+	if err != nil {
+		return nil, err
+	}
+	batch, dberr := db.GetBatch(batchId)
+	if dberr != nil {
+		return nil, dberr
+	}
+	return batch, dberr
+}
+
+func UpdateJob(j *internal.Job) *multi.Error {
+	db, err := internal.NewDBConn(internal.SCHEDULAR, internal.SQLITE)
+	defer db.Close()
+	if err != nil {
+		return err
+	}
+	dberr := db.UpdateJob(j)
+	if dberr != nil {
+		return dberr
+	}
+	return dberr
 }

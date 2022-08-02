@@ -28,7 +28,7 @@ func UpdateJob(j internal.Job) *multi.Error {
 		return err
 	}
 
-	serr := db.UpdateJob(j)
+	serr := db.UpdateJob(&j)
 	if serr != nil {
 		return serr
 	}

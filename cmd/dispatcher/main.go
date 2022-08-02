@@ -59,13 +59,13 @@ func dispatch(w http.ResponseWriter, req *http.Request) {
 	j, err := parseJob(req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		erres := multi.Erroresponse{Code: err.Code, Message: err.Message}
+		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
 		data, _ := json.Marshal(erres)
 		fmt.Fprintf(w, "%s", data)
 	} else {
 		saverr := dispatcher.SaveJob(j)
 		if saverr != nil {
-			erres := multi.Erroresponse{Code: saverr.Code, Message: saverr.Message}
+			erres := multi.ErroResponse{Code: saverr.Code, Message: saverr.Message}
 			data, _ := json.Marshal(erres)
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, "%s", data)

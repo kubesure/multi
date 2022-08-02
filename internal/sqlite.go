@@ -178,7 +178,7 @@ func (db *sqlite) SaveJob(j *Job) (err *multi.Error) {
 	return nil
 }
 
-func (db *sqlite) UpdateJob(j Job) (err *multi.Error) {
+func (db *sqlite) UpdateJob(j *Job) (err *multi.Error) {
 	log := multi.NewLogger()
 	insertSQL := "UPDATE job SET status = coalesce(?,status), error_msg = coalesce(?,error_msg),retry_count = coalesce(?,retry_count) " +
 		",updated_datetime = ?, result = coalesce(?,result) where id = ? and batch_id= ?"

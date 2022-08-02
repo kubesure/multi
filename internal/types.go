@@ -52,7 +52,7 @@ type database interface {
 	SaveSchedule(s schedule) (string, *multi.Error)
 	SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error)
 	GetBatch(id string) (*Batch, *multi.Error)
-	UpdateJob(j Job) (err *multi.Error)
+	UpdateJob(j *Job) (err *multi.Error)
 	SaveJob(j *Job) (err *multi.Error)
 	GetJob(jobID, batchID string) (*Job, *multi.Error)
 	GetJobs(batchID string) ([]Job, *multi.Error)

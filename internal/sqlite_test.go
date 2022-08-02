@@ -112,7 +112,7 @@ func TestUpdateJob(t *testing.T) {
 	j.ErrorMsg = &errmsg
 	res := "result"
 	j.Result = &res
-	errupdate := db.UpdateJob(j)
+	errupdate := db.UpdateJob(&j)
 	if errupdate != nil {
 		t.Errorf("should have updated job")
 	}
