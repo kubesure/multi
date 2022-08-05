@@ -10,7 +10,7 @@ create TABLE job (
     batch_id              TEXT,
     payload               TEXT,
     result                TEXT,
-    endpoint              TEXT,  
+    endpoint              INTEGER,  
     status                TEXT,
     error_msg             TEXT,
     max_response          INTEGER,
@@ -19,6 +19,18 @@ create TABLE job (
     created_datetime	  TEXT,
     updated_datetime      TEXT,
     UNIQUE(id,batch_id)
+);
+
+create table endpoint (
+    batch_id TEXT,
+    uri TEXT,
+    method TEXT,
+    auth_type TEXT,
+    auth_srvcert TEXT,
+    auth_uname TEXT,
+    auth_pass TEXT,
+    headers TEXT,
+    UNIQUE(batch_id)
 );
 
 create table schedule (

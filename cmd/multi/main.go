@@ -33,7 +33,7 @@ func main() {
 	r.HandleFunc("/api/v1/multi/searches/customers", scheduleCustomerSearch).Methods("POST")
 	r.HandleFunc("/api/v1/multi/searches/customers/{id}", scheduledBatchInfo).Methods("GET")
 	r.HandleFunc("/api/v1/multi/searches/customers/{id}/searches/{id}", updateSearchResult).Methods("PUT")
-	r.MethodNotAllowedHandler = MethodNotAllowedHandler()
+	//r.MethodNotAllowedHandler = MethodNotAllowedHandler()
 	http.Handle("/", r)
 
 	srv := http.Server{

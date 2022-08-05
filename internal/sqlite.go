@@ -37,10 +37,23 @@ func (db *sqlite) SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error) {
 		return "", err
 	}
 
+	insertEPSQL := "INSERT INTO endpoint()"
+	ePStmt, ePErr := tx.Prepare(insertEPSQL)
+	if ePErr != nil {
+		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+	_, ePErr = ePStmt.Exec(currentDateTime(), currentDateTime())
+	if ePErr != nil {
+		tx.Rollback()
+		log.LogInternalError(ePErr.Error())
+		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+	}
+
 	insertSQL := "INSERT INTO job(id,batch_id,req_payload,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
 		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 	jobStmt, joberr := tx.Prepare(insertSQL)
 	if joberr != nil {
+		log.LogInternalError(joberr.Error())
 		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 	for index, job := range jobs {

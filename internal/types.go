@@ -8,6 +8,7 @@ import (
 
 type CustomerSearch struct {
 	MaxResponseTimeSeconds uint       `json:"maxResponseTimeSeconds"`
+	EndPoint               Endpoint   `json:"endPoint"`
 	Customers              []Customer `json:"customers"`
 }
 
@@ -45,6 +46,26 @@ type Job struct {
 	RetryCount      *uint     `json:"retryCount"`
 	CreatedDateTime time.Time `json:"createdDateTime"`
 	UpdatedDateTime time.Time `json:"updatedDateTime"`
+}
+
+type Endpoint struct {
+	BatchId string    `json:"batchId"`
+	Uri     string    `json:"uri"`
+	Method  string    `json:"method"`
+	Auth    Auth      `json:"auth"`
+	Headers []Headers `json:"headers"`
+}
+
+type Auth struct {
+	Type              string `json:"type"`
+	UserName          string `json:"userName"`
+	Password          string `json:"password"`
+	ServerCertificate string `json:"serverCertificate"`
+}
+
+type Headers struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type database interface {
