@@ -42,28 +42,44 @@ type Job struct {
 	Result          *string   `json:"result"`
 	Status          *string   `json:"status"`
 	ErrorMsg        *string   `json:"errorMessage"`
-	EndPoint        string    `json:"endPoint"`
+	EndPoint        *Endpoint `json:"endPoint"`
 	RetryCount      *uint     `json:"retryCount"`
 	CreatedDateTime time.Time `json:"createdDateTime"`
 	UpdatedDateTime time.Time `json:"updatedDateTime"`
 }
 
+type AuthType string
+
+const (
+	BASIC  AuthType = "BASIC"
+	MTLS   AuthType = "MTLS"
+	BEARER AuthType = "BEARER"
+)
+
+type RequestType string
+
+const (
+	HTTP RequestType = "HTTP"
+	GRPC RequestType = "GRPC"
+)
+
 type Endpoint struct {
-	BatchId string    `json:"batchId"`
-	Uri     string    `json:"uri"`
-	Method  string    `json:"method"`
-	Auth    Auth      `json:"auth"`
-	Headers []Headers `json:"headers"`
+	BatchId string      `json:"batchId"`
+	Uri     string      `json:"uri"`
+	Method  string      `json:"method"`
+	Auth    Auth        `json:"auth"`
+	Headers []Header    `json:"headers"`
+	Type    RequestType `json:"type"`
 }
 
 type Auth struct {
-	Type              string `json:"type"`
-	UserName          string `json:"userName"`
-	Password          string `json:"password"`
-	ServerCertificate string `json:"serverCertificate"`
+	Type              AuthType `json:"type"`
+	UserName          string   `json:"userName"`
+	Password          string   `json:"password"`
+	ServerCertificate string   `json:"serverCertificate"`
 }
 
-type Headers struct {
+type Header struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }

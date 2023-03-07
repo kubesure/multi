@@ -1,0 +1,42 @@
+{
+    "jobs": [
+        {
+            "id": "121345667",
+            "maxResponseTimeSeconds": 10,
+            "maxRetry": "3",
+            "retryIntervalSeconds": "15",
+            "endPoint": {
+                "uri": "https://localhost:9080/customers",
+                "method": "GET",
+                "headers": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "auth": {
+                    "type": "basic",
+                    "userName": "name",
+                    "password": "pass",
+                    "serverCertificate": "sdsdfsfs"
+                }
+            },
+            "payload": {
+                "customers": [
+                    {
+                        "firstName": "Pete",
+                        "lastName": "Smith"
+                    },
+                    {
+                        "firstName": "Audrey",
+                        "lastName": "Bailey"
+                    },
+                    {
+                        "firstName": "Pete",
+                        "lastName": "Smith"
+                    }
+                ]
+            }
+        }
+    ]
+}

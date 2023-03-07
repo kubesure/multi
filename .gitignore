@@ -18,3 +18,4 @@ db/schedular.db
 scrap
 db/dispatch.db
 cmd/.DS_Store
+db/schedular.db-journal

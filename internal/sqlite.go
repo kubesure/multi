@@ -37,11 +37,14 @@ func (db *sqlite) SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error) {
 		return "", err
 	}
 
-	insertEPSQL := "INSERT INTO endpoint()"
+	insertEPSQL := "INSERT INTO endpoint (batch_id,uri,method,auth_type,auth_srvcert,auth_uname,auth_pass,headers)" +
+		"VALUES (?,?,?,?,?,?,?,?)"
 	ePStmt, ePErr := tx.Prepare(insertEPSQL)
 	if ePErr != nil {
+		log.LogInternalError(ePErr.Error())
 		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
+
 	_, ePErr = ePStmt.Exec(currentDateTime(), currentDateTime())
 	if ePErr != nil {
 		tx.Rollback()
@@ -49,15 +52,15 @@ func (db *sqlite) SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error) {
 		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	insertSQL := "INSERT INTO job(id,batch_id,req_payload,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
-		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+	insertSQL := "INSERT INTO job(id,batch_id,req_payload,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
+		"VALUES (?,?,?,?,?,?,?,?,?,?)"
 	jobStmt, joberr := tx.Prepare(insertSQL)
 	if joberr != nil {
 		log.LogInternalError(joberr.Error())
 		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 	for index, job := range jobs {
-		_, joberr = jobStmt.Exec(index+1, batchId, job.Payload, job.EndPoint, CREATED, job.ErrorMsg, job.MaxResponse, job.RetryInterval, job.RetryCount, currentDateTime(), currentDateTime())
+		_, joberr = jobStmt.Exec(index+1, batchId, job.Payload, CREATED, job.ErrorMsg, job.MaxResponse, job.RetryInterval, job.RetryCount, currentDateTime(), currentDateTime())
 		if joberr != nil {
 			tx.Rollback()
 			log.LogInternalError(joberr.Error())

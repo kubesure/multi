@@ -76,10 +76,10 @@ func TestGetJob(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Should have reterived job")
-	}
-
-	if job.Id != 5 {
-		t.Errorf("should have reterived job id 1")
+	} else {
+		if job.Id != 5 {
+			t.Errorf("should have reterived job id 45a515a1-9f8b-45ca-aad1-a81e11108a68")
+		}
 	}
 
 }
@@ -123,7 +123,7 @@ func jobUpdate() Job {
 	j1.Id = 5
 	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
 	j1.Payload = "payload"
-	j1.EndPoint = "http://localhost/customer/search"
+	j1.EndPoint = endPoint()
 	j1.MaxResponse = 5
 	j1.RetryInterval = 3
 	msg := "error msg"
@@ -139,7 +139,7 @@ func jobs() []Job {
 	j1.Id = 5
 	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
 	j1.Payload = "payload"
-	j1.EndPoint = "http://localhost/customer/search"
+	j1.EndPoint = endPoint()
 	j1.MaxResponse = 5
 	j1.RetryInterval = 3
 	msg := "error msg"
@@ -151,7 +151,7 @@ func jobs() []Job {
 
 	j2 := Job{}
 	j2.Payload = "payload"
-	j2.EndPoint = "http://localhost/customer/search"
+	j2.EndPoint = endPoint()
 	j2.MaxResponse = 5
 	j2.RetryInterval = 3
 	msg = "error msg"
@@ -164,6 +164,21 @@ func jobs() []Job {
 	jobs = append(jobs, j1)
 	jobs = append(jobs, j2)
 	return jobs
+}
+
+func endPoint() *Endpoint {
+	ep := Endpoint{}
+	ep.Method = "GET"
+	ep.Type = "HTTP"
+	ep.Uri = "http://localhost/customer/search"
+	ep.Auth.Type = BASIC
+	ep.Auth.Password = "pass"
+	ep.Auth.UserName = "user"
+	headers := make([]Header, 0)
+	h := Header{Key: "Bearer", Value: "sfsdfas345wrsfsfd"}
+	headers = append(headers, h)
+	ep.Headers = headers
+	return &ep
 }
 
 func batchs() Batch {

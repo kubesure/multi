@@ -30,9 +30,10 @@ func main() {
 	r := mux.NewRouter()
 	//r.Headers("content-Type", "application/json")
 	r.HandleFunc("/", healthz).Methods("GET")
-	r.HandleFunc("/api/v1/multi/searches/customers", scheduleCustomerSearch).Methods("POST")
-	r.HandleFunc("/api/v1/multi/searches/customers/{id}", scheduledBatchInfo).Methods("GET")
-	r.HandleFunc("/api/v1/multi/searches/customers/{id}/searches/{id}", updateSearchResult).Methods("PUT")
+	r.HandleFunc("/api/v1/multi/batches", scheduleBatch).Methods("POST")
+	r.HandleFunc("/api/v1/multi/batches/{id}", scheduledBatchInfo).Methods("GET")
+	r.HandleFunc("/api/v1/multi/batches/{id}", updateBatchResult).Methods("PUT")
+	r.HandleFunc("/api/v1/multi/batches/jobs/{id}", jobResult).Methods("GET")
 	//r.MethodNotAllowedHandler = MethodNotAllowedHandler()
 	http.Handle("/", r)
 
@@ -70,7 +71,7 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 //Scheduler schedules requests on dispatchers
-func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
+func scheduleBatch(w http.ResponseWriter, req *http.Request) {
 	cs, err := parseCustomer(req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -87,7 +88,7 @@ func scheduleCustomerSearch(w http.ResponseWriter, req *http.Request) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		// write to location header
-		w.Write([]byte("scheduled " + id))
+		w.Write([]byte("batch " + id))
 	}
 
 }
@@ -107,7 +108,7 @@ func scheduledBatchInfo(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func updateSearchResult(w http.ResponseWriter, req *http.Request) {
+func updateBatchResult(w http.ResponseWriter, req *http.Request) {
 	j, err := praseJob(req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -124,6 +125,13 @@ func updateSearchResult(w http.ResponseWriter, req *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 	}
+}
+
+func jobResult(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	data := (time.Now()).String() + "result"
+	log.Debug("result")
+	w.Write([]byte(data))
 }
 
 func parseCustomer(req *http.Request) (*internal.CustomerSearch, *multi.Error) {
