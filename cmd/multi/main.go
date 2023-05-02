@@ -19,6 +19,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type createBatchReq struct {
+	Jobs []internal.Job
+}
+
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.DebugLevel)
@@ -72,25 +76,27 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 
 //Scheduler schedules requests on dispatchers
 func scheduleBatch(w http.ResponseWriter, req *http.Request) {
-	cs, err := parseCustomer(req)
+	cbr, err := praseJobs(req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
 		data, _ := json.Marshal(erres)
 		fmt.Fprintf(w, "%s", data)
 	} else {
-		id, err1 := mi.SaveBatch(internal.CustomerSearchType, cs)
+		batch, err1 := mi.SaveBatch(cbr.Jobs)
+
 		if err1 != nil {
 			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
 			data, _ := json.Marshal(erres)
 			w.WriteHeader(http.StatusServiceUnavailable)
 			fmt.Fprintf(w, "%s", data)
+		} else {
+			w.WriteHeader(http.StatusCreated)
+			// write to location header
+			data, _ := json.Marshal(batch)
+			fmt.Fprintf(w, "%s", data)
 		}
-		w.WriteHeader(http.StatusCreated)
-		// write to location header
-		w.Write([]byte("batch " + id))
 	}
-
 }
 
 func scheduledBatchInfo(w http.ResponseWriter, req *http.Request) {
@@ -109,14 +115,14 @@ func scheduledBatchInfo(w http.ResponseWriter, req *http.Request) {
 }
 
 func updateBatchResult(w http.ResponseWriter, req *http.Request) {
-	j, err := praseJob(req)
+	_, err := praseJobs(req)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
 		data, _ := json.Marshal(erres)
 		fmt.Fprintf(w, "%s", data)
 	} else {
-		err1 := mi.UpdateJob(j)
+		err1 := mi.UpdateJob(nil)
 		if err1 != nil {
 			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
 			data, _ := json.Marshal(erres)
@@ -134,26 +140,15 @@ func jobResult(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(data))
 }
 
-func parseCustomer(req *http.Request) (*internal.CustomerSearch, *multi.Error) {
+func praseJobs(req *http.Request) (*createBatchReq, *multi.Error) {
 	body, _ := ioutil.ReadAll(req.Body)
-	cs := internal.CustomerSearch{}
-	err := json.Unmarshal([]byte(body), &cs)
+	var cbr createBatchReq
+	err := json.Unmarshal([]byte(body), &cbr)
 	if err != nil {
 		log.Errorf("err %v during unmarshalling data %s ", err, body)
 		return nil, &multi.Error{Code: multi.HTTPError, Message: multi.HTTPRequestError}
 	}
-	return &cs, nil
-}
-
-func praseJob(req *http.Request) (*internal.Job, *multi.Error) {
-	body, _ := ioutil.ReadAll(req.Body)
-	j := internal.Job{}
-	err := json.Unmarshal([]byte(body), &j)
-	if err != nil {
-		log.Errorf("err %v during unmarshalling data %s ", err, body)
-		return nil, &multi.Error{Code: multi.HTTPError, Message: multi.HTTPRequestError}
-	}
-	return &j, nil
+	return &cbr, nil
 }
 
 func MethodNotAllowedHandler() http.Handler {

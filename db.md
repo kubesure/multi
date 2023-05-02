@@ -6,11 +6,11 @@ CREATE TABLE batch (
 );
 
 create TABLE job (
-    id                    INTEGER,
+    id                    TEXT,
     batch_id              TEXT,
     payload               TEXT,
+    compress_dispatch     BOOL,
     result                TEXT,
-    endpoint              INTEGER,  
     status                TEXT,
     error_msg             TEXT,
     max_response          INTEGER,
@@ -22,7 +22,7 @@ create TABLE job (
 );
 
 create table endpoint (
-    batch_id TEXT,
+    job_id TEXT,
     uri TEXT,
     method TEXT,
     auth_type TEXT,
@@ -30,7 +30,7 @@ create table endpoint (
     auth_uname TEXT,
     auth_pass TEXT,
     headers TEXT,
-    UNIQUE(batch_id)
+    UNIQUE(job_id)
 );
 
 create table schedule (

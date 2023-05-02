@@ -2,6 +2,7 @@ package internal
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,71 +11,82 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//TODO Implement batch_id as binary type in all crud statements
+
 type sqlite struct {
 	sqlite3 *sql.DB
 }
 
-func (db *sqlite) SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error) {
+func (db *sqlite) SaveBatch(jobs []Job) (batch *Batch, err *multi.Error) {
 	log := multi.NewLogger()
+	var b *Batch = &Batch{}
 	tx, txerr := db.sqlite3.Begin()
 	if txerr != nil {
 		log.LogInternalError(txerr.Error())
-		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	stmt, serr := tx.Prepare("INSERT INTO batch(id,type,created_datetime,updated_datetime) VALUES (?,?,?,?)")
+	stmt, serr := tx.Prepare("INSERT INTO batch(id,created_datetime,updated_datetime) VALUES (?,?,?)")
 	if serr != nil {
 		log.LogInternalError(serr.Error())
-		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	batchId := uuid.New().String()
+	b.id = uuid.New().String()
 
-	_, err1 := stmt.Exec(batchId, b.Type, currentDateTime(), currentDateTime())
+	_, err1 := stmt.Exec(b.id, currentDateTime(), currentDateTime())
 	defer stmt.Close()
 	if err1 != nil {
 		log.LogInternalError(err1.Error())
-		return "", err
+		return nil, err
 	}
 
-	insertEPSQL := "INSERT INTO endpoint (batch_id,uri,method,auth_type,auth_srvcert,auth_uname,auth_pass,headers)" +
+	insertEPSQL := "INSERT INTO endpoint (job_id,uri,method,auth_type,auth_srvcert,auth_uname,auth_pass,headers)" +
 		"VALUES (?,?,?,?,?,?,?,?)"
 	ePStmt, ePErr := tx.Prepare(insertEPSQL)
 	if ePErr != nil {
 		log.LogInternalError(ePErr.Error())
-		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	_, ePErr = ePStmt.Exec(currentDateTime(), currentDateTime())
-	if ePErr != nil {
-		tx.Rollback()
-		log.LogInternalError(ePErr.Error())
-		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
-	}
-
-	insertSQL := "INSERT INTO job(id,batch_id,req_payload,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
-		"VALUES (?,?,?,?,?,?,?,?,?,?)"
+	insertSQL := "INSERT INTO job(id,batch_id,payload,compress_dispatch,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 	jobStmt, joberr := tx.Prepare(insertSQL)
 	if joberr != nil {
 		log.LogInternalError(joberr.Error())
-		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
-	for index, job := range jobs {
-		_, joberr = jobStmt.Exec(index+1, batchId, job.Payload, CREATED, job.ErrorMsg, job.MaxResponse, job.RetryInterval, job.RetryCount, currentDateTime(), currentDateTime())
-		if joberr != nil {
+	for _, job := range jobs {
+		_, joberr = jobStmt.Exec(job.Id, b.id, job.Payload.Data, job.Payload.CompressedDispatch, CREATED, job.ErrorMsg, job.MaxResponseSeconds, job.RetryIntervalSeconds, job.MaxRetry, currentDateTime(), currentDateTime())
+		headers := makeHeaders(job.EndPoint.Headers)
+		_, ePErr = ePStmt.Exec(job.Id, job.EndPoint.Uri, job.EndPoint.Method, job.EndPoint.Auth.Type, job.EndPoint.Auth.ServerCertificate, job.EndPoint.Auth.UserName, job.EndPoint.Auth.Password, headers)
+		if joberr != nil || ePErr != nil {
 			tx.Rollback()
-			log.LogInternalError(joberr.Error())
-			return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+			if joberr != nil {
+				log.LogInternalError(joberr.Error())
+			}
+			if ePErr != nil {
+				log.LogInternalError(ePErr.Error())
+			}
+			return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 		}
 	}
 
 	txerr = tx.Commit()
 	if txerr != nil {
 		log.LogInternalError(txerr.Error())
-		return "", &multi.Error{Code: multi.InternalError, Message: multi.DBError}
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	return batchId, nil
+	return b, nil
+}
+
+func makeHeaders(headers []Header) string {
+	var h string
+	for _, v := range headers {
+		h += fmt.Sprintf("%v:%v-", v.Key, v.Value)
+	}
+	return h
 }
 
 func (db *sqlite) GetBatch(id string) (*Batch, *multi.Error) {
@@ -106,7 +118,7 @@ func (db *sqlite) GetBatch(id string) (*Batch, *multi.Error) {
 
 func (db *sqlite) GetJobs(batchID string) ([]Job, *multi.Error) {
 	log := multi.NewLogger()
-	q := "select id,batch_id,payload,result,endpoint,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=?"
+	q := "select id,batch_id,payload,compress_dispatch,result,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=?"
 	jobs, err := db.Getjobs(q, batchID)
 	if err != nil {
 		log.LogInternalError(err.Inner.Error())
@@ -117,7 +129,7 @@ func (db *sqlite) GetJobs(batchID string) ([]Job, *multi.Error) {
 }
 
 func (db *sqlite) GetJob(jobID, batchID string) (*Job, *multi.Error) {
-	q := "select id,batch_id,payload,result,endpoint,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=? and id = ?"
+	q := "select id,batch_id,payload,compress_dispatch,result,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=? and id = ?"
 	log := multi.NewLogger()
 	jobs, err := db.Getjobs(q, batchID, jobID)
 
@@ -149,13 +161,23 @@ func (db *sqlite) Getjobs(query string, id ...string) ([]Job, *multi.Error) {
 
 	defer rows.Close()
 	jobs := make([]Job, 0)
+
 	for rows.Next() {
 		j := Job{}
+		j.Payload = &Payload{}
 		var created_datetime, updated_datetime string
 		var errormsg sql.NullString
 		var retrycount sql.NullInt32
-		rows.Scan(&j.Id, &j.BatchId, &j.Payload, &j.Result, &j.EndPoint, &j.Status, &created_datetime,
-			&updated_datetime, &j.MaxResponse, &j.RetryInterval, &errormsg, &retrycount)
+		var result sql.NullString
+
+		serr := rows.Scan(&j.Id, &j.BatchId, &j.Payload.Data, &j.Payload.CompressedDispatch, &result, &j.Status, &created_datetime,
+			&updated_datetime, &j.MaxResponseSeconds, &j.RetryIntervalSeconds, &errormsg, &retrycount)
+
+		if serr != nil {
+			log.LogInternalError(serr.Error())
+			return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: serr}
+		}
+
 		if errormsg.Valid {
 			j.ErrorMsg = &errormsg.String
 		} else {
@@ -165,28 +187,44 @@ func (db *sqlite) Getjobs(query string, id ...string) ([]Job, *multi.Error) {
 
 		if retrycount.Valid {
 			count := uint(retrycount.Int32)
-			j.RetryCount = &count
+			j.MaxRetry = count
 		} else {
 			var count uint = 0
-			j.RetryCount = &count
+			j.MaxRetry = count
 		}
+
+		if result.Valid {
+			j.Result = &result.String
+		} else {
+			val := ""
+			j.Result = &val
+		}
+
 		j.CreatedDateTime = *parseDateTime(created_datetime)
 		j.UpdatedDateTime = *parseDateTime(updated_datetime)
 		jobs = append(jobs, j)
 	}
+
+	rerr := rows.Err()
+	if rerr != nil {
+		log.LogInternalError(qerr.Error())
+		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: rerr}
+	}
+
 	return jobs, nil
 }
 
 func (db *sqlite) SaveJob(j *Job) (err *multi.Error) {
 	log := multi.NewLogger()
-	insertSQL := "INSERT INTO job(id,batch_id,payload,result,endpoint,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
-		"VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+	insertSQL := "INSERT INTO job(id,batch_id,payload,compress_dispatch,status,error_msg,max_response,retry_interval,retry_count,created_datetime,updated_datetime)" +
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 	jobStmt, joberr := db.sqlite3.Prepare(insertSQL)
 	if joberr != nil {
-		log.LogInternalError(joberr.Error())
+		log.LogInternalError("error inserting job " + joberr.Error())
 		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
-	_, joberr = jobStmt.Exec(j.Id, j.BatchId, j.Payload, j.Result, j.EndPoint, j.Status, j.ErrorMsg, j.MaxResponse, j.RetryInterval, j.RetryCount, currentDateTime(), currentDateTime())
+	_, joberr = jobStmt.Exec(j.Id, j.BatchId, j.Payload.Data, j.Payload.CompressedDispatch, CREATED, j.ErrorMsg, j.MaxResponseSeconds, j.RetryIntervalSeconds, j.MaxRetry, currentDateTime(), currentDateTime())
+
 	if joberr != nil {
 		log.LogInternalError(joberr.Error())
 		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
@@ -196,19 +234,35 @@ func (db *sqlite) SaveJob(j *Job) (err *multi.Error) {
 
 func (db *sqlite) UpdateJob(j *Job) (err *multi.Error) {
 	log := multi.NewLogger()
-	insertSQL := "UPDATE job SET status = coalesce(?,status), error_msg = coalesce(?,error_msg),retry_count = coalesce(?,retry_count) " +
-		",updated_datetime = ?, result = coalesce(?,result) where id = ? and batch_id= ?"
-	jobStmt, joberr := db.sqlite3.Prepare(insertSQL)
+	updateSQL := "UPDATE job SET status = coalesce(?,status), error_msg = coalesce(?,error_msg),retry_count = coalesce(?,retry_count)" +
+		",result = coalesce(?,result), updated_datetime = ? where id = ?"
+
+	//	and batch_id = ?
+	jobStmt, joberr := db.sqlite3.Prepare(updateSQL)
+
 	if joberr != nil {
 		log.LogInternalError(joberr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: joberr}
+	}
+
+	result, serr := jobStmt.Exec(j.Status, j.ErrorMsg, j.MaxRetry, currentDateTime(), j.Result, j.Id)
+
+	if err != nil {
+		log.LogInternalError(serr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: serr}
+	}
+
+	count, rserr := result.RowsAffected()
+	if rserr != nil {
+		log.LogInternalError(rserr.Error())
+		return &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: rserr}
+	}
+
+	if count == 0 {
+		log.LogInternalError("no job updated")
 		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	_, joberr = jobStmt.Exec(j.Status, j.ErrorMsg, j.RetryCount, currentDateTime(), j.Result, j.Id, j.BatchId)
-	if joberr != nil {
-		log.LogInternalError(joberr.Error())
-		return &multi.Error{Code: multi.InternalError, Message: multi.DBError}
-	}
 	return nil
 }
 

@@ -22,20 +22,8 @@
                 }
             },
             "payload": {
-                "customers": [
-                    {
-                        "firstName": "Pete",
-                        "lastName": "Smith"
-                    },
-                    {
-                        "firstName": "Audrey",
-                        "lastName": "Bailey"
-                    },
-                    {
-                        "firstName": "Pete",
-                        "lastName": "Smith"
-                    }
-                ]
+                "compressedDispatch" : false,
+                "data" : "\"customers\": [\r\n                    {\r\n                        \"firstName\": \"Pete\",\r\n                        \"lastName\": \"Smith\"\r\n                    },\r\n                    {\r\n                        \"firstName\": \"Audrey\",\r\n                        \"lastName\": \"Bailey\"\r\n                    },\r\n                    {\r\n                        \"firstName\": \"Pete\",\r\n                        \"lastName\": \"Smith\"\r\n                    }\r\n                ]"
             }
         }
     ]

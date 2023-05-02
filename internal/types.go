@@ -34,18 +34,23 @@ type Batch struct {
 }
 
 type Job struct {
-	Id              uint      `json:"id"`
-	MaxResponse     uint      `json:"maxResponseTimeSeconds"`
-	RetryInterval   uint      `json:"retryInterval"`
-	BatchId         string    `json:"batchId"`
-	Payload         string    `json:"payload"`
-	Result          *string   `json:"result"`
-	Status          *string   `json:"status"`
-	ErrorMsg        *string   `json:"errorMessage"`
-	EndPoint        *Endpoint `json:"endPoint"`
-	RetryCount      *uint     `json:"retryCount"`
-	CreatedDateTime time.Time `json:"createdDateTime"`
-	UpdatedDateTime time.Time `json:"updatedDateTime"`
+	Id                   string    `json:"id"`
+	MaxResponseSeconds   uint      `json:"maxResponseTimeSeconds"`
+	RetryIntervalSeconds uint      `json:"retryIntervalSeconds"`
+	MaxRetry             uint      `json:"maxRetry"`
+	BatchId              string    `json:"batchId"`
+	Payload              *Payload  `json:"payload"`
+	Result               *string   `json:"result"`
+	Status               *string   `json:"status"`
+	ErrorMsg             *string   `json:"errorMessage"`
+	EndPoint             *Endpoint `json:"endPoint"`
+	CreatedDateTime      time.Time `json:"createdDateTime"`
+	UpdatedDateTime      time.Time `json:"updatedDateTime"`
+}
+
+type Payload struct {
+	CompressedDispatch bool
+	Data               string
 }
 
 type AuthType string
@@ -87,10 +92,10 @@ type Header struct {
 type database interface {
 	GetSchedule(id string) (*schedule, *multi.Error)
 	SaveSchedule(s schedule) (string, *multi.Error)
-	SaveBatch(b Batch, jobs []Job) (id string, err *multi.Error)
+	SaveBatch(jobs []Job) (*Batch, *multi.Error)
 	GetBatch(id string) (*Batch, *multi.Error)
-	UpdateJob(j *Job) (err *multi.Error)
-	SaveJob(j *Job) (err *multi.Error)
+	UpdateJob(j *Job) *multi.Error
+	SaveJob(j *Job) *multi.Error
 	GetJob(jobID, batchID string) (*Job, *multi.Error)
 	GetJobs(batchID string) ([]Job, *multi.Error)
 	Close() *multi.Error
@@ -112,7 +117,7 @@ const (
 type dbname string
 
 const (
-	SCHEDULAR  dbname = "../db/schedular.db"
+	SCHEDULAR  dbname = "../../db/schedular.db"
 	DISPATCHER dbname = "../../db/dispatcher.db"
 )
 

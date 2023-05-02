@@ -1,42 +1,45 @@
 package internal
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestSaveBatch(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	id, errsave := db.SaveBatch(batchs(), jobs())
+	b, errsave := db.SaveBatch(job())
 	if errsave != nil {
 		t.Errorf("should have saved batch ")
 	}
 
-	if len(id) == 0 {
+	if b == nil {
 		t.Errorf("did not get id from save op")
 	}
 }
 
 func TestGetBatchFound(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	b, err := db.GetBatch("45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	b, err := db.GetBatch("099073a1-7e85-411c-93d7-936c64e8e757")
 
 	if err != nil {
 		t.Errorf("Should have reterived batch")
 	}
 
-	if b.id != "45a515a1-9f8b-45ca-aad1-a81e11108a68" {
+	if b.id != "099073a1-7e85-411c-93d7-936c64e8e757" {
 		t.Errorf("cannot reterive id")
 	}
 }
 
 func TestGetBatchNotFound(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -52,40 +55,40 @@ func TestGetBatchNotFound(t *testing.T) {
 }
 
 func TestGetJobs(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	jobs, err := db.GetJobs("45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	jobs, err := db.GetJobs("05ddeaec-3b43-4a35-8e77-1196c1d3c61c")
 
 	if err != nil {
 		t.Errorf("Should have reterived jobs")
 	}
 
-	if len(jobs) != 2 {
+	if len(jobs) != 1 {
 		t.Errorf("should have reterived two jobs")
 	}
 }
 
 func TestGetJob(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	job, err := db.GetJob("5", "45a515a1-9f8b-45ca-aad1-a81e11108a68")
+	job, err := db.GetJob("102234456242", "05ddeaec-3b43-4a35-8e77-1196c1d3c61c")
 
 	if err != nil {
 		t.Errorf("Should have reterived job")
 	} else {
-		if job.Id != 5 {
-			t.Errorf("should have reterived job id 45a515a1-9f8b-45ca-aad1-a81e11108a68")
+		if job.Payload.Data != "{data}" {
+			t.Errorf("should have reterived data %v", "{data}")
 		}
 	}
 
 }
 
 func TestSaveJob(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -97,7 +100,7 @@ func TestSaveJob(t *testing.T) {
 }
 
 func TestUpdateJob(t *testing.T) {
-	db, err := NewDBConn(SCHEDULAR, SQLITE)
+	db, err := NewDBConn("../db/schedular.db", SQLITE)
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
@@ -105,12 +108,12 @@ func TestUpdateJob(t *testing.T) {
 	j := jobUpdate()
 	status := string(COMPLETED)
 	j.Status = &status
-	j.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
+	//j.BatchId = "05ddeaec-3b43-4a35-8e77-1196c1d3c61c"
 	var count uint = 17
-	j.RetryCount = &count
+	j.MaxRetry = count
 	errmsg := "conn error"
 	j.ErrorMsg = &errmsg
-	res := "result"
+	res := "{result}"
 	j.Result = &res
 	errupdate := db.UpdateJob(&j)
 	if errupdate != nil {
@@ -120,43 +123,67 @@ func TestUpdateJob(t *testing.T) {
 
 func jobUpdate() Job {
 	j1 := Job{}
-	j1.Id = 5
-	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
-	j1.Payload = "payload"
+	j1.Id = "102234456242"
+	j1.BatchId = "05ddeaec-3b43-4a35-8e77-1196c1d3c61c"
+	j1.Payload = txtPayload()
 	j1.EndPoint = endPoint()
-	j1.MaxResponse = 5
-	j1.RetryInterval = 3
-	msg := "error msg"
+	j1.MaxResponseSeconds = 5
+	j1.RetryIntervalSeconds = 3
+	msg := "error msg new"
 	j1.ErrorMsg = &msg
 	var count uint = 10
-	j1.RetryCount = &count
+	j1.MaxRetry = count
 	//j1.Status = string(CREATED)
 	return j1
 }
 
+func txtPayload() *Payload {
+	return &Payload{CompressedDispatch: true, Data: "{data}"}
+}
+
+func job() []Job {
+	j1 := Job{}
+	j1.Id = "992234456242"
+	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e99908a68"
+	j1.Payload = txtPayload()
+	j1.EndPoint = endPoint()
+	j1.MaxResponseSeconds = 5
+	j1.RetryIntervalSeconds = 3
+	msg := "error msg 2"
+	j1.ErrorMsg = &msg
+	var count uint = 10
+	j1.MaxRetry = count
+	status := string(CREATED)
+	j1.Status = &status
+	jobs := []Job{}
+	jobs = append(jobs, j1)
+	return jobs
+}
+
 func jobs() []Job {
 	j1 := Job{}
-	j1.Id = 5
+	j1.Id = "1023424234"
 	j1.BatchId = "45a515a1-9f8b-45ca-aad1-a81e11108a68"
-	j1.Payload = "payload"
+	j1.Payload = txtPayload()
 	j1.EndPoint = endPoint()
-	j1.MaxResponse = 5
-	j1.RetryInterval = 3
+	j1.MaxResponseSeconds = 5
+	j1.RetryIntervalSeconds = 3
 	msg := "error msg"
 	j1.ErrorMsg = &msg
 	var count uint = 10
-	j1.RetryCount = &count
+	j1.MaxRetry = count
 	status := string(CREATED)
 	j1.Status = &status
 
 	j2 := Job{}
-	j2.Payload = "payload"
+	j2.Id = "12674633"
+	j2.Payload = txtPayload()
 	j2.EndPoint = endPoint()
-	j2.MaxResponse = 5
-	j2.RetryInterval = 3
+	j2.MaxResponseSeconds = 5
+	j2.RetryIntervalSeconds = 3
 	msg = "error msg"
 	j2.ErrorMsg = &msg
-	j2.RetryCount = &count
+	j2.MaxRetry = count
 	status = string(CREATED)
 	j2.Status = &status
 
@@ -174,6 +201,7 @@ func endPoint() *Endpoint {
 	ep.Auth.Type = BASIC
 	ep.Auth.Password = "pass"
 	ep.Auth.UserName = "user"
+	ep.Auth.ServerCertificate = "sdlfkas;dgjads;gokads;fke0rsdl;gkafg9eriglkdbjadijgdlkg"
 	headers := make([]Header, 0)
 	h := Header{Key: "Bearer", Value: "sfsdfas345wrsfsfd"}
 	headers = append(headers, h)
@@ -181,6 +209,7 @@ func endPoint() *Endpoint {
 	return &ep
 }
 
-func batchs() Batch {
-	return Batch{Type: CustomerSearchType}
+func TestUUID(t *testing.T) {
+	u := uuid.New()
+	fmt.Printf("%v \n", u)
 }
