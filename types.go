@@ -2,7 +2,7 @@ package multi
 
 import "github.com/sirupsen/logrus"
 
-//LogEvent stores log message
+// LogEvent stores log message
 type LogEvent struct {
 	id      EventCode
 	message string
@@ -31,8 +31,10 @@ const (
 type ErrorMessage string
 
 const (
-	DBError          ErrorMessage = "DB Transaction Error"
-	HTTPRequestError ErrorMessage = "HTTP Request Invalid"
+	DBError            ErrorMessage = "DB Transaction Error"
+	HTTPRequestError   ErrorMessage = "HTTP Request Invalid"
+	HTTPResponseError  ErrorMessage = "HTTP Response Error"
+	MultiInternalError ErrorMessage = "Internal Error"
 )
 
 type ErroResponse struct {

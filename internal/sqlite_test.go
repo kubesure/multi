@@ -27,13 +27,13 @@ func TestGetBatchFound(t *testing.T) {
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	b, err := db.GetBatch("099073a1-7e85-411c-93d7-936c64e8e757")
+	b, err := db.GetBatch("0dc73091-e790-488a-98ef-28cdfdbeba3c")
 
 	if err != nil {
 		t.Errorf("Should have reterived batch")
 	}
 
-	if b.id != "099073a1-7e85-411c-93d7-936c64e8e757" {
+	if b.Id != "0dc73091-e790-488a-98ef-28cdfdbeba3c" {
 		t.Errorf("cannot reterive id")
 	}
 }

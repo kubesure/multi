@@ -17,6 +17,7 @@ type sqlite struct {
 	sqlite3 *sql.DB
 }
 
+// TODO add status to batch
 func (db *sqlite) SaveBatch(jobs []Job) (batch *Batch, err *multi.Error) {
 	log := multi.NewLogger()
 	var b *Batch = &Batch{}
@@ -32,9 +33,9 @@ func (db *sqlite) SaveBatch(jobs []Job) (batch *Batch, err *multi.Error) {
 		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 
-	b.id = uuid.New().String()
+	b.Id = uuid.New().String()
 
-	_, err1 := stmt.Exec(b.id, currentDateTime(), currentDateTime())
+	_, err1 := stmt.Exec(b.Id, currentDateTime(), currentDateTime())
 	defer stmt.Close()
 	if err1 != nil {
 		log.LogInternalError(err1.Error())
@@ -57,7 +58,7 @@ func (db *sqlite) SaveBatch(jobs []Job) (batch *Batch, err *multi.Error) {
 		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
 	}
 	for _, job := range jobs {
-		_, joberr = jobStmt.Exec(job.Id, b.id, job.Payload.Data, job.Payload.CompressedDispatch, CREATED, job.ErrorMsg, job.MaxResponseSeconds, job.RetryIntervalSeconds, job.MaxRetry, currentDateTime(), currentDateTime())
+		_, joberr = jobStmt.Exec(job.Id, b.Id, job.Payload.Data, job.Payload.CompressedDispatch, CREATED, job.ErrorMsg, job.MaxResponseSeconds, job.RetryIntervalSeconds, job.MaxRetry, currentDateTime(), currentDateTime())
 		headers := makeHeaders(job.EndPoint.Headers)
 		_, ePErr = ePStmt.Exec(job.Id, job.EndPoint.Uri, job.EndPoint.Method, job.EndPoint.Auth.Type, job.EndPoint.Auth.ServerCertificate, job.EndPoint.Auth.UserName, job.EndPoint.Auth.Password, headers)
 		if joberr != nil || ePErr != nil {
@@ -91,7 +92,7 @@ func makeHeaders(headers []Header) string {
 
 func (db *sqlite) GetBatch(id string) (*Batch, *multi.Error) {
 	log := multi.NewLogger()
-	row, qerr := db.sqlite3.Query("select id,type, created_datetime, updated_datetime from batch where id=?", id)
+	row, qerr := db.sqlite3.Query("select id,created_datetime, updated_datetime from batch where id=?", id)
 
 	if qerr != nil {
 		log.LogInternalError(qerr.Error())
@@ -103,9 +104,9 @@ func (db *sqlite) GetBatch(id string) (*Batch, *multi.Error) {
 	for row.Next() {
 		b = &Batch{}
 		var created_datetime, updated_datetime string
-		row.Scan(&b.id, &b.Type, &created_datetime, &updated_datetime)
-		b.createdDateTime = *parseDateTime(created_datetime)
-		b.updatedDateTime = *parseDateTime(updated_datetime)
+		row.Scan(&b.Id, &created_datetime, &updated_datetime)
+		b.CreatedDateTime = *parseDateTime(created_datetime)
+		b.UpdatedDateTime = *parseDateTime(updated_datetime)
 		jobs, jerr := db.GetJobs(id)
 		if jerr != nil {
 			return nil, jerr

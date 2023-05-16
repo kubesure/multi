@@ -27,10 +27,11 @@ type schedule struct {
 }
 
 type Batch struct {
-	id                               string
-	createdDateTime, updatedDateTime time.Time
-	Type                             BatchType
-	jobs                             []Job
+	Id              string    `json:"id"`
+	CreatedDateTime time.Time `json:"createdDateTime"`
+	UpdatedDateTime time.Time `json:"updatedDateTime"`
+	ttype           BatchType `json:"type"`
+	jobs            []Job     `json:"jobs"`
 }
 
 type Job struct {
