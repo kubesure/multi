@@ -20,7 +20,7 @@ func SaveBatch(jobs []Job) (batch *Batch, err *multi.Error) {
 		return nil, err
 	}
 
-	b, err1 := db.SaveBatch(jobs)
+	b, err1 := db.SaveJobs(jobs)
 	if err1 != nil {
 		return nil, err1
 	}

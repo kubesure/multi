@@ -18,7 +18,7 @@ type sqlite struct {
 }
 
 // TODO add status to batch
-func (db *sqlite) SaveBatch(jobs []Job) (batch *Batch, err *multi.Error) {
+func (db *sqlite) SaveJobs(jobs []Job) (batch *Batch, err *multi.Error) {
 	log := multi.NewLogger()
 	var b *Batch = &Batch{}
 	tx, txerr := db.sqlite3.Begin()
@@ -120,7 +120,7 @@ func (db *sqlite) GetBatch(id string) (*Batch, *multi.Error) {
 func (db *sqlite) GetJobs(batchID string) ([]Job, *multi.Error) {
 	log := multi.NewLogger()
 	q := "select id,batch_id,payload,compress_dispatch,result,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=?"
-	jobs, err := db.Getjobs(q, batchID)
+	jobs, err := db.getjobs(q, batchID)
 	if err != nil {
 		log.LogInternalError(err.Inner.Error())
 		return nil, &multi.Error{Code: multi.InternalError, Message: multi.DBError}
@@ -132,7 +132,7 @@ func (db *sqlite) GetJobs(batchID string) ([]Job, *multi.Error) {
 func (db *sqlite) GetJob(jobID, batchID string) (*Job, *multi.Error) {
 	q := "select id,batch_id,payload,compress_dispatch,result,status,created_datetime,updated_datetime,max_response,retry_interval,error_msg,retry_count from job where batch_id=? and id = ?"
 	log := multi.NewLogger()
-	jobs, err := db.Getjobs(q, batchID, jobID)
+	jobs, err := db.getjobs(q, batchID, jobID)
 
 	if err != nil {
 		log.LogInternalError(err.Inner.Error())
@@ -145,7 +145,7 @@ func (db *sqlite) GetJob(jobID, batchID string) (*Job, *multi.Error) {
 	return nil, nil
 }
 
-func (db *sqlite) Getjobs(query string, id ...string) ([]Job, *multi.Error) {
+func (db *sqlite) getjobs(query string, id ...string) ([]Job, *multi.Error) {
 	log := multi.NewLogger()
 	var qerr error
 	var rows *sql.Rows
@@ -246,7 +246,7 @@ func (db *sqlite) UpdateJob(j *Job) (err *multi.Error) {
 		return &multi.Error{Code: multi.InternalError, Message: multi.DBError, Inner: joberr}
 	}
 
-	result, serr := jobStmt.Exec(j.Status, j.ErrorMsg, j.MaxRetry, currentDateTime(), j.Result, j.Id)
+	result, serr := jobStmt.Exec(j.Status, j.ErrorMsg, j.MaxRetry, j.Result, currentDateTime(), j.Id)
 
 	if err != nil {
 		log.LogInternalError(serr.Error())

@@ -24,20 +24,32 @@ type Error struct {
 type EventCode int
 
 const (
-	InternalError EventCode = iota
+	InternalError EventCode = iota + 1
 	HTTPError
+	BatchNotFoundError
+	JobNotFoundError
 )
 
 type ErrorMessage string
 
 const (
-	DBError            ErrorMessage = "DB Transaction Error"
-	HTTPRequestError   ErrorMessage = "HTTP Request Invalid"
-	HTTPResponseError  ErrorMessage = "HTTP Response Error"
-	MultiInternalError ErrorMessage = "Internal Error"
+	DBError            ErrorMessage = "db transaction error"
+	HTTPRequestError   ErrorMessage = "http request invalid"
+	HTTPResponseError  ErrorMessage = "http response error"
+	MultiInternalError ErrorMessage = "internal error"
 )
 
-type ErroResponse struct {
-	Code    EventCode    `json:"errorCode"`
-	Message ErrorMessage `json:"errorMessage"`
+const (
+	BatchNotFound ErrorMessage = "batch not found"
+	JobNotFound   ErrorMessage = "job not found"
+	InputInvalid  ErrorMessage = "input invalid"
+)
+
+type ResponseErrors struct {
+	Errors []ErrorResponse `json:"errors"`
+}
+
+type ErrorResponse struct {
+	Code    EventCode    `json:"code"`
+	Message ErrorMessage `json:"message"`
 }

@@ -12,7 +12,7 @@ func TestSaveBatch(t *testing.T) {
 	if err != nil {
 		t.Errorf("should have had not got a db conn error")
 	}
-	b, errsave := db.SaveBatch(job())
+	b, errsave := db.SaveJobs(job())
 	if errsave != nil {
 		t.Errorf("should have saved batch ")
 	}

@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,14 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type createBatchReq struct {
-	Jobs []internal.Job
-}
-
-type updateJobReq struct {
-	Job internal.Job
-}
-
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(log.DebugLevel)
@@ -34,8 +24,9 @@ func init() {
 func main() {
 
 	router := gin.Default()
+	router.Use(internal.PreChecks(), internal.BeforeResponse())
 	router.GET("/healthz", healthz)
-	router.POST("/api/v1/multi/batches", scheduleBatch)
+	router.POST("/api/v1/multi/jobs", scheduleBatch)
 	router.PUT("/api/v1/multi/batches/:id/jobs/:id", updateJob)
 	router.GET("/api/v1/multi/batches/:id", scheduledBatchInfo)
 	router.GET("/api/v1/multi/batches/:id/jobs/:id", jobInfo)
@@ -43,8 +34,8 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":8000",
 		Handler:      router,
-		WriteTimeout: 5 * time.Second,
-		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 1 * time.Second,
+		ReadTimeout:  1 * time.Second,
 	}
 
 	go func() {
@@ -66,129 +57,90 @@ func main() {
 	}
 }
 
-// call by k8s liveness probe
-func healthz(c *gin.Context) {
-	c.Writer.WriteHeader(200)
-	data := (time.Now()).String()
-	log.Debug("health ok")
-	c.Writer.Write([]byte(data))
-}
-
 // Scheduler schedules requests on dispatchers
 func scheduleBatch(c *gin.Context) {
-	cbr, err := praseJobs(c.Request)
-	if err != nil {
-		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
-		data, _ := json.Marshal(erres)
-		c.String(http.StatusBadRequest, string(data))
+	cbr := internal.CreateBatchReq{}
+	if err := c.BindJSON(&cbr); err != nil {
+		err := multi.ErrorResponse{Code: multi.HTTPError, Message: multi.InputInvalid}
+		c.AbortWithStatusJSON(http.StatusBadRequest, internal.ResponseError(err, nil))
+		return
 	} else {
 		batch, err1 := internal.SaveBatch(cbr.Jobs)
-
 		if err1 != nil {
-			erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
-			data, _ := json.Marshal(erres)
-			c.String(http.StatusServiceUnavailable, string(data))
+			erres := multi.ErrorResponse{Code: err1.Code, Message: err1.Message}
+			c.JSON(http.StatusInternalServerError, erres)
 		} else {
-			c.Writer.WriteHeader(http.StatusCreated)
 			// write to location header
-			data, err := response(batch)
-			if err != nil {
-				erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
-				data, _ := json.Marshal(erres)
-				c.String(http.StatusServiceUnavailable, string(data))
-			} else {
-				c.String(http.StatusCreated, string(data))
-			}
-		}
-	}
-}
-
-func scheduledBatchInfo(c *gin.Context) {
-	id := c.Param("id")
-
-	if len(id) == 0 {
-		erres := multi.ErroResponse{Code: multi.HTTPError, Message: multi.HTTPRequestError}
-		data, _ := json.Marshal(erres)
-		c.String(http.StatusBadRequest, string(data))
-	} else {
-		batch, err1 := internal.GetBatch(id)
-		if err1 != nil {
-			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
-			data, _ := json.Marshal(erres)
-			c.String(http.StatusServiceUnavailable, string(data))
-		}
-		data, _ := json.Marshal(batch)
-		c.String(http.StatusOK, string(data))
-	}
-}
-
-func jobInfo(c *gin.Context) {
-
-	var bid, jid string
-
-	if len(c.Params) != 2 {
-		erres := multi.ErroResponse{Code: multi.HTTPError, Message: multi.HTTPRequestError}
-		data, _ := json.Marshal(erres)
-		c.String(http.StatusBadRequest, string(data))
-	} else {
-		bid = c.Params[0].Value
-		jid = c.Params[1].Value
-		job, err1 := internal.GetJob(jid, bid)
-		if err1 != nil {
-			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
-			data, _ := json.Marshal(erres)
-			c.String(http.StatusServiceUnavailable, string(data))
-		}
-
-		data, err := internal.MarshalAny(job)
-		if err != nil {
-			erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
-			data, _ := json.Marshal(erres)
-			c.String(http.StatusServiceUnavailable, string(data))
-		} else {
-			c.String(http.StatusOK, string(data))
+			c.JSON(http.StatusCreated, batch)
 		}
 	}
 }
 
 func updateJob(c *gin.Context) {
-	body, _ := ioutil.ReadAll(c.Request.Body)
-	job, err := internal.UnmarshalAny[internal.Job](body)
-
-	if err != nil {
-		erres := multi.ErroResponse{Code: err.Code, Message: err.Message}
-		data, _ := json.Marshal(erres)
-		c.String(http.StatusBadRequest, string(data))
+	job := &internal.Job{}
+	if err := c.BindJSON(job); err != nil {
+		err := multi.ErrorResponse{Code: multi.HTTPError, Message: multi.InputInvalid}
+		c.AbortWithStatusJSON(http.StatusBadRequest, internal.ResponseError(err, nil))
+		return
 	} else {
 		job.Id = c.Params[1].Value
 		err1 := internal.UpdateJob(job)
 		if err1 != nil {
-			erres := multi.ErroResponse{Code: err1.Code, Message: err1.Message}
-			data, _ := json.Marshal(erres)
-			c.String(http.StatusServiceUnavailable, string(data))
+			erres := multi.ErrorResponse{Code: err1.Code, Message: err1.Message}
+			c.JSON(http.StatusInternalServerError, erres)
 		} else {
 			c.Writer.WriteHeader(http.StatusOK)
 		}
 	}
 }
 
-func response(batch *internal.Batch) (data []byte, err *multi.ErroResponse) {
-	log := multi.NewLogger()
-	data, errj := json.Marshal(batch)
-	if errj != nil {
-		log.LogInternalError(errj.Error())
-		return nil, &multi.ErroResponse{Code: multi.HTTPError, Message: multi.HTTPResponseError}
+func scheduledBatchInfo(c *gin.Context) {
+	id := c.Param("id")
+	if len(id) == 0 {
+		err := multi.ErrorResponse{Code: multi.HTTPError, Message: multi.InputInvalid}
+		c.AbortWithStatusJSON(http.StatusBadRequest, internal.ResponseError(err, nil))
+		return
+	} else {
+		batch, err1 := internal.GetBatch(id)
+		if err1 != nil {
+			erres := multi.ErrorResponse{Code: err1.Code, Message: err1.Message}
+			c.JSON(http.StatusInternalServerError, erres)
+		} else {
+			if batch == nil {
+				err := multi.ErrorResponse{Code: multi.BatchNotFoundError, Message: multi.BatchNotFound}
+				c.AbortWithStatusJSON(http.StatusNotFound, internal.ResponseError(err, nil))
+			} else {
+				c.JSON(http.StatusOK, batch)
+			}
+		}
 	}
-	return data, nil
 }
 
-func praseJobs(req *http.Request) (*createBatchReq, *multi.Error) {
-	body, _ := ioutil.ReadAll(req.Body)
-	var cbr createBatchReq
-	err := json.Unmarshal([]byte(body), &cbr)
-	if err != nil {
-		log.Errorf("err %v during unmarshalling data %s ", err, body)
-		return nil, &multi.Error{Code: multi.HTTPError, Message: multi.HTTPRequestError}
+func jobInfo(c *gin.Context) {
+	var bid, jid string
+	if len(c.Params) != 2 {
+		err := multi.ErrorResponse{Code: multi.HTTPError, Message: multi.InputInvalid}
+		c.AbortWithStatusJSON(http.StatusBadRequest, internal.ResponseError(err, nil))
+		return
+	} else {
+		bid = c.Params[0].Value
+		jid = c.Params[1].Value
+		job, err1 := internal.GetJob(jid, bid)
+		if err1 != nil {
+			erres := multi.ErrorResponse{Code: err1.Code, Message: err1.Message}
+			c.JSON(http.StatusInternalServerError, erres)
+		} else {
+			if job == nil {
+				err := multi.ErrorResponse{Code: multi.JobNotFoundError, Message: multi.JobNotFound}
+				c.AbortWithStatusJSON(http.StatusNotFound, internal.ResponseError(err, nil))
+			} else {
+				c.JSON(http.StatusOK, job)
+			}
+		}
 	}
-	return &cbr, nil
+}
+
+// call by k8s liveness probe
+func healthz(c *gin.Context) {
+	c.Writer.WriteHeader(200)
 }
